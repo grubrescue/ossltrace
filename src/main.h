@@ -1,0 +1,1 @@
+#define INPROC_LIB_PATH "libinproc_inject.so"
