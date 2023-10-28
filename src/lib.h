@@ -1,3 +1,3 @@
 #pragma once
 
-#define SO_EXPORT __attribute__((visibility("default")))
+#define INPROC_SO_EXPORT __attribute__((visibility("default")))
