@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "lib.h"
 
 #include <stddef.h>
@@ -5,26 +7,27 @@
 #include <dlfcn.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <assert.h>
+#include <gnu/libc-version.h>   
 
 #include <gnu/lib-names.h>
 
-// typedef void * (*dlsym_callback)(void *restrict handle, const char *restrict symbol);
-// dlsym_callback __real_dlsym = NULL;
-// void * __dlsym_handle = NULL;
+typedef void * (*dlsym_callback)(void *restrict handle, const char *restrict symbol);
+dlsym_callback __real_dlsym = NULL;
 
-
-// INPROC_SO_EXPORT
-// void *
-// dlsym(void *restrict handle, const char *restrict symbol) {
-//     if (__real_dlsym == NULL) {
-//         __dlsym_handle = dlopen(LIBC_SO, RTLD_LAZY);
-//         assert(__dlsym_handle != NULL);
-//         __real_dlsym = dlsym(__dlsym_handle, "dlsym");
-//         assert(__real_dlsym != NULL);
-//     }
-//     fprintf(stderr, "%s is gonna be found\n", symbol);
-//     __real_dlsym(handle, symbol);
-// }
+INPROC_SO_EXPORT
+void *
+dlsym(void *restrict handle, const char *restrict symbol) {
+    if (__real_dlsym == NULL) {
+        __real_dlsym = dlvsym(RTLD_DEFAULT, "dlsym", NULL); // todo
+        if (__real_dlsym == NULL) {
+            fprintf(stderr, "%s\n", dlerror());
+        }
+        assert(__real_dlsym != NULL);
+    }
+    fprintf(stderr, "%s is gonna be found\n", symbol);
+    __real_dlsym(handle, symbol);
+}
 
 
 typedef int (*SSL_write_callback)(SSL *ssl, const void *buf, int num);
