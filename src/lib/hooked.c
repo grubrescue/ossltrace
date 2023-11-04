@@ -20,14 +20,16 @@ static void
 hooked_init() {
     char *output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
 
+    fprintf(stderr, "> %s\n\n", output_file_path);
+
     if (output_file_path == NULL) {
         log_fd = 1;
         log_file = stdout;
     } 
     
     else {
-        log_fd = open(output_file_path, O_WRONLY | O_CREAT);
-        log_file = fdopen(log_fd, "w+");
+        log_fd = open(output_file_path, O_RDWR | O_CREAT, 00660);
+        log_file = fdopen(log_fd, "w+"); // todo убрать принтфы, либо делать flush
 
         if (log_fd == -1 || log_file == NULL) {
             perror(output_file_path);
@@ -66,6 +68,9 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
     if (!hooked_initialized) {
         hooked_init();
     }
+
+    write(2, "aboba", 6);
+
 
     fprintf(log_file, "\n\n --- SSL_write intercepted --- \n");
     fprintf(log_file, "intermediate buffer size is %d, contents: \n\n", num); 

@@ -8,23 +8,7 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <assert.h>
-
-const char *argp_program_version
-    = "inproc rev 0.0000001";
-const char *argp_program_bug_address
-    = "<p.smolyakov@g.nsu.ru>";
-static char doc[] 
-    = "In-process firewall";
-static char args_doc[]
-    = "PATHNAME pathname_args...";
-
-static struct argp_option options[] = { 
-    { "method", 'm', "PRELOAD,AUDIT", OPTION_ARG_OPTIONAL, 
-        "Specify method for intercepting calls. Default is preload." },
-    { "output", 'o', "FILE", OPTION_ARG_OPTIONAL, 
-        "Output logs to FILE instead of stdout." },
-    { 0 }
-};
+#include <stdlib.h>
 
 struct arguments {
     enum { PRELOAD, AUDIT } mode;
@@ -32,45 +16,10 @@ struct arguments {
     char **child_argv;
 };
 
-static error_t 
-parse_opt(int key, char *arg, struct argp_state *state) {
-    struct arguments *arguments = state->input;
-    fprintf(stderr, "id: %d arg: %s\n", state->, state->argv[state->next]);
-
-    switch (key) {
-        case 'm':
-            assert(arg != NULL);
-            write(2, arg, strlen(arg));
-            if (!strcmp(arg, "preload")) {
-                arguments->mode = PRELOAD;
-            } else if (!strcmp(arg, "audit")) {
-                arguments->mode = AUDIT;
-            } else {
-                argp_usage(state);
-            }
-            break;
-
-        case 'o':
-            arguments->output_file_path = arg;
-            break;
-
-        case ARGP_KEY_NO_ARGS:
-            argp_usage(state);
-            break;
-
-        case ARGP_KEY_ARG:
-            // write(2, state->argv[state->argc - 1], strlen(state->argv[state->argc - 1]));
-            arguments->child_argv = &state->argv[state->argc - 1];
-            return ARGP_KEY_END;
-
-        default:
-            return ARGP_ERR_UNKNOWN;
-    }
-
-    return 0;
+void 
+print_usage(FILE *where, char *pathname) {
+    fprintf(stderr, "usage: %s <command> <mode: preload|audit> [command args]\n", pathname);
 }
-
-static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 
 int 
 main(int argc, char **argv) {
@@ -79,7 +28,50 @@ main(int argc, char **argv) {
     arguments.child_argv = NULL;
     arguments.mode = PRELOAD;
 
-    argp_parse(&argp, argc, argv, ARGP_IN_ORDER, 0, &arguments);
+    int finishedParsing = 0;
+    while (!finishedParsing) {
+        int option_index = 0;
+
+        static struct option long_options[] = {
+            { "method", required_argument, NULL, 'm' },
+            { "output", required_argument, NULL, 'o' },
+            { "filter", required_argument, NULL, 'f' },
+            { NULL,     0,                 NULL,  0  }
+        };
+
+        int c = getopt_long(argc, argv, "+m:o:f:", long_options, &option_index);
+
+        switch (c) {
+            case 'm':
+                // printf("option m with value '%s'\n", optarg);
+                if (!strcmp(optarg, "preload")) {
+                    arguments.mode = PRELOAD;
+                } else if (!strcmp(optarg, "audit")) {
+                    arguments.mode = AUDIT;
+                } else {
+                    print_usage(stderr, argv[0]);
+                }
+                break;
+            case 'o':
+                arguments.output_file_path = strdup(optarg);
+                break;
+            case 'f':
+                printf("option f with value '%s'\n", optarg);
+                break;
+            case '?':
+                print_usage(stderr, argv[0]);
+                exit(EXIT_FAILURE);
+            default:
+                finishedParsing = 1;
+        }   
+    }
+
+    if (optind < argc) {
+        arguments.child_argv = &argv[optind];
+    } else {
+        print_usage(stderr, argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     switch(arguments.mode) {
         case PRELOAD:
@@ -100,6 +92,7 @@ main(int argc, char **argv) {
 
     if (arguments.output_file_path != NULL) {
         setenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
+        free(arguments.output_file_path);
     } else {
         unsetenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
     }
