@@ -7,11 +7,13 @@
 #include <sys/wait.h>
 #include <string.h>
 
-void print_usage(FILE *where, char *pathname) {
+void 
+print_usage(FILE *where, char *pathname) {
     fprintf(stderr, "usage: %s <command> <mode: preload|audit> [command args]\n", pathname);
 }
 
-int main(int argc, char **argv) {
+int 
+main(int argc, char **argv) {
     if (argc < 3) {
         fprintf(stderr, "%s: not enough args\n", argv[0]);
         print_usage(stderr, argv[0]);

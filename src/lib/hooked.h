@@ -1,6 +1,5 @@
 #pragma once
 
-#define INPROC_SYMBOL_VISIBLE __attribute__((visibility("default")))
 #define INPROC_OUTPUT_FILE_DIR_ENV_VAR "INPROC_OUTPUT_FILE_DIR"
 
 #include <openssl/ssl.h>

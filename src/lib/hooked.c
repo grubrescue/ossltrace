@@ -76,7 +76,7 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
     fprintf(log_file, "\n\n");
     
     int retval = original_SSL_write(ssl, buf, num);
-    
+
     fprintf(log_file, "return value is %d\n ---\n\n", retval);
     return retval;
 }

@@ -22,6 +22,6 @@ pre:
 executable: pre
 	$(CC) -o $(INPROC_OUTPUT_DIR)/$(INPROC_EXECUTABLE_NAME) src/main/main.c
 preload: pre
-	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_PRELOAD_LIB_NAME) src/lib/lib_preload.c src/lib/lib_hook.c
+	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_PRELOAD_LIB_NAME) src/lib/preload.c src/lib/hooked.c
 audit: pre
-	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_AUDIT_LIB_NAME) src/lib_audit.c src/lib/lib_hook.c
+	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_AUDIT_LIB_NAME) src/audit.c src/lib/hooked.c
