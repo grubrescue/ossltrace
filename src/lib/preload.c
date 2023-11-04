@@ -8,10 +8,8 @@
 #include <unistd.h>
 #include <assert.h>
 #include <gnu/libc-version.h>   
-
 #include <gnu/lib-names.h>
 
-INPROC_SYMBOL_VISIBLE 
 int 
 SSL_write(SSL *ssl, const void *buf, int num) {
     if (get_SSL_write_callback() == NULL) {
@@ -21,7 +19,6 @@ SSL_write(SSL *ssl, const void *buf, int num) {
     hooked_SSL_write(ssl, buf, num);
 }
 
-INPROC_SYMBOL_VISIBLE 
 int 
 SSL_read(SSL *ssl, void *buf, int num) {
     if (get_SSL_read_callback() == NULL) {

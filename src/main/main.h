@@ -6,4 +6,3 @@
 
 #define INPROC_PRELOAD_ENV_VAR "INPROC_PRELOAD_LIB_PATH"
 #define DEFAULT_INPROC_PRELOAD_LIB_PATH "build/libinproc_preload.so"
-

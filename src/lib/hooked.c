@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include "hooked.h"
 
 #include <stddef.h>
@@ -19,6 +17,7 @@ static int log_fd = -1;
 static FILE* log_file = NULL;
 static bool initialized = false;
 
+__attribute__((visibility("hidden")))
 static void 
 init() {
     char *output_file_path = getenv(INPROC_OUTPUT_FILE_DIR_ENV_VAR);

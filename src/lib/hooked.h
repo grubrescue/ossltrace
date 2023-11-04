@@ -4,7 +4,6 @@
 
 #include <openssl/ssl.h>
 
-
 // SSL_write
 inline void 
 set_SSL_write_callback(void *symbol);
@@ -14,7 +13,6 @@ get_SSL_write_callback(void);
 
 int 
 hooked_SSL_write(SSL *ssl, const void *buf, int num);
-
 
 // SSL_read
 inline void 
