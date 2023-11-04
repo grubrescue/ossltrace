@@ -26,13 +26,13 @@ int main(int argc, char **argv) {
     if (strcmp(mode, "preload") == 0) {
         char *lib_path = getenv(INPROC_PRELOAD_ENV_VAR);
         if (lib_path == NULL) {
-            lib_path = INPROC_PRELOAD_ENV_VAR;
+            lib_path = DEFAULT_INPROC_PRELOAD_LIB_PATH;
         }
         setenv("LD_PRELOAD", lib_path, 1);
     } else if (strcmp(mode, "audit") == 0) {
         char *lib_path = getenv(INPROC_AUDIT_ENV_VAR);
         if (lib_path == NULL) {
-            lib_path = INPROC_AUDIT_ENV_VAR;
+            lib_path = DEFAULT_INPROC_AUDIT_LIB_PATH;
         }
         setenv("LD_AUDIT", lib_path, 1);
     } else {
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     } else if (pid > 0 /*parent*/) {
         int status;
         wait(&status);
-        printf("--- '%s' exited with return code %u\n", child_file, WEXITSTATUS(status));
+        printf("\n~ '%s' exited with return code %u ~ \n\n", child_file, WEXITSTATUS(status));
     } else {
         perror("unforkable");
     }

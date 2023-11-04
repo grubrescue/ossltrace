@@ -1,7 +1,9 @@
-CC=gcc
+ifeq ($(INPROC_AUDIT_LIB_NAME),)
+INPROC_AUDIT_LIB_NAME := libinproc_audit.so
+endif
 
-ifeq ($(INPROC_LIB_NAME),)
-INPROC_LIB_NAME := libinproc_inject.so
+ifeq ($(INPROC_PRELOAD_LIB_NAME),)
+INPROC_PRELOAD_LIB_NAME := libinproc_preload.so
 endif
 
 ifeq ($(INPROC_EXECUTABLE_NAME),)
@@ -12,10 +14,14 @@ ifeq ($(INPROC_OUTPUT_DIR),)
 INPROC_OUTPUT_DIR := build
 endif
 
-all: pre app lib
+CC=gcc
+
+all: pre executable preload #audit
 pre:
 	mkdir -p $(INPROC_OUTPUT_DIR)
-app: pre
-	$(CC) -o $(INPROC_OUTPUT_DIR)/$(INPROC_EXECUTABLE_NAME) src/main.c
-lib: pre
-	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_LIB_NAME) src/lib.c 
+executable: pre
+	$(CC) -o $(INPROC_OUTPUT_DIR)/$(INPROC_EXECUTABLE_NAME) src/main/main.c
+preload: pre
+	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_PRELOAD_LIB_NAME) src/lib/lib_preload.c src/lib/lib_hook.c
+audit: pre
+	$(CC) -shared -fPIC -fvisibility=hidden -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_AUDIT_LIB_NAME) src/lib_audit.c src/lib/lib_hook.c
