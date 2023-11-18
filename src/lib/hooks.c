@@ -1,4 +1,4 @@
-#include "hooked.h"
+#include "hooks.h"
 
 #include <stddef.h>
 #include <openssl/ssl.h>
@@ -18,9 +18,7 @@ static int hooked_initialized = 0;
 
 static void 
 hooked_init() {
-    char *output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
-
-    fprintf(stderr, "> %s\n\n", output_file_path);
+    char * output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
 
     if (output_file_path == NULL) {
         log_fd = 1;
@@ -33,7 +31,7 @@ hooked_init() {
 
         if (log_fd == -1 || log_file == NULL) {
             perror(output_file_path);
-            fprintf(stderr, "log will be output to stdout\n\n");
+            fprintf(stderr, "log will be output to stdout\n\n"); fflush(stderr);
 
             log_fd = 1;
             log_file = stdout;
@@ -44,11 +42,18 @@ hooked_init() {
 }
 
 
+#define INPROC_LOG(...) \
+    fprintf(log_file, __VA_ARGS__); \
+    fflush(log_file);
+
+#define INPROC_LOG_BUF(buf, num) \
+    write(log_fd, buf, num);
+
+
 // SSL_write
 
 typedef int 
-(*SSL_write_callback)
-(SSL *ssl, const void *buf, int num);
+(*SSL_write_callback) (SSL *, const void *, int);
 
 static SSL_write_callback original_SSL_write = NULL;
 
@@ -64,22 +69,19 @@ get_SSL_write_callback() {
 }
 
 int 
-hooked_SSL_write(SSL *ssl, const void *buf, int num) {
+hooked_SSL_write(SSL * ssl, const void * buf, int num) {
     if (!hooked_initialized) {
         hooked_init();
     }
 
-    write(2, "aboba", 6);
-
-
-    fprintf(log_file, "\n\n --- SSL_write intercepted --- \n");
-    fprintf(log_file, "intermediate buffer size is %d, contents: \n\n", num); 
-    write(log_fd, buf, num);
-    fprintf(log_file, "\n\n");
+    INPROC_LOG("\n\n --- SSL_write intercepted --- \n")
+    INPROC_LOG("intermediate buffer size is %d, contents: \n\n", num)
+    INPROC_LOG_BUF(buf, num)
+    INPROC_LOG("\n\n")
     
     int retval = original_SSL_write(ssl, buf, num);
 
-    fprintf(log_file, "return value is %d\n ----------------------------- \n\n", retval);
+    INPROC_LOG("return value is %d\n-----------------------------\n\n", retval)
     return retval;
 }
 
@@ -87,8 +89,7 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
 // SSL_read
 
 typedef int 
-(*SSL_read_callback)
-(SSL *ssl, void *buf, int num);
+(*SSL_read_callback) (SSL *, void *, int);
 
 static SSL_read_callback original_SSL_read = NULL;
 
@@ -104,23 +105,25 @@ get_SSL_read_callback() {
 }
 
 int 
-hooked_SSL_read(SSL *ssl, void *buf, int num) {
+hooked_SSL_read(SSL * ssl, void * buf, int num) {
     if (!hooked_initialized) {
         hooked_init();
     }
 
-    fprintf(log_file, "\n\n --- SSL_read intercepted --- \n");
+    INPROC_LOG("\n\n--- SSL_read intercepted ---\n")
 
     int retval = original_SSL_read(ssl, buf, num);
     if (retval == -1) {
-        fprintf(log_file, "retval is -1, no buffer, sorry");
+        INPROC_LOG("retval is -1, no buffer, sorry")
     } else {
-        fprintf(log_file, "intermediate buffer size is %d (num was %d) contents: \n\n", retval, num);
-        write(log_fd, buf, num);
-
+        INPROC_LOG("intermediate buffer size is %d (num was %d) contents: \n\n", retval, num)
+        INPROC_LOG_BUF(buf, retval)
     }
 
-    fprintf(log_file, "\n\n ---------------------------- \n\n");
+    INPROC_LOG("\n\n----------------------------\n\n")
 
     return retval;
 }
+
+#undef INPROC_LOG
+#undef INPROC_LOG_BUF

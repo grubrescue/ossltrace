@@ -16,12 +16,12 @@ endif
 
 CC=gcc
 
-all: pre executable preload #audit
+all: pre executable preload audit
 pre:
 	mkdir -p $(INPROC_OUTPUT_DIR)
 executable: pre
 	$(CC) -o $(INPROC_OUTPUT_DIR)/$(INPROC_EXECUTABLE_NAME) src/main/main.c
 preload: pre
-	$(CC) -shared -fPIC -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_PRELOAD_LIB_NAME) src/lib/preload.c src/lib/hooked.c
+	$(CC) -shared -fPIC -o $(INPROC_OUTPUT_DIR)/$(INPROC_PRELOAD_LIB_NAME) src/lib/preload.c src/lib/hooks.c -lssl
 audit: pre
-	$(CC) -shared -fPIC -lssl -o $(INPROC_OUTPUT_DIR)/$(INPROC_AUDIT_LIB_NAME) src/audit.c src/lib/hooked.c
+	$(CC) -shared -fPIC -o $(INPROC_OUTPUT_DIR)/$(INPROC_AUDIT_LIB_NAME) src/lib/audit.c src/lib/hooks.c -lssl

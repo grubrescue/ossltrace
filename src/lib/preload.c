@@ -11,7 +11,7 @@
 #include <gnu/lib-names.h>
 
 int 
-SSL_write(SSL *ssl, const void *buf, int num) {
+SSL_write(SSL * ssl, const void * buf, int num) {
     if (get_SSL_write_callback() == NULL) {
         set_SSL_write_callback(dlsym(RTLD_NEXT, "SSL_write"));
     }
@@ -20,7 +20,7 @@ SSL_write(SSL *ssl, const void *buf, int num) {
 }
 
 int 
-SSL_read(SSL *ssl, void *buf, int num) {
+SSL_read(SSL * ssl, void * buf, int num) {
     if (get_SSL_read_callback() == NULL) {
         set_SSL_read_callback(dlsym(RTLD_NEXT, "SSL_read"));
     }

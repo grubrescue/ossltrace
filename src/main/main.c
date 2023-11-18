@@ -18,14 +18,14 @@ struct arguments {
 
 void 
 print_usage(FILE *where, char *pathname) {
-    fprintf(stderr, "usage: %s <command> <mode: preload|audit> [command args]\n", pathname);
+    fprintf(where, "usage: %s -m|--mode: preload|audit> [command args]\n", pathname);
 }
 
 int 
 main(int argc, char **argv) {
     struct arguments arguments;
-    arguments.output_file_path = NULL;
-    arguments.child_argv = NULL;
+    arguments.output_file_path = NULL; 
+    arguments.child_argv = NULL; // required
     arguments.mode = PRELOAD;
 
     int finishedParsing = 0;
@@ -43,7 +43,6 @@ main(int argc, char **argv) {
 
         switch (c) {
             case 'm':
-                // printf("option m with value '%s'\n", optarg);
                 if (!strcmp(optarg, "preload")) {
                     arguments.mode = PRELOAD;
                 } else if (!strcmp(optarg, "audit")) {
@@ -73,41 +72,49 @@ main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    switch(arguments.mode) {
-        case PRELOAD:
-            char *preload_lib_path = getenv(INPROC_PRELOAD_ENV_VAR);
-            if (preload_lib_path == NULL) {
-                preload_lib_path = DEFAULT_INPROC_PRELOAD_LIB_PATH;
-            }
-            setenv("LD_PRELOAD", preload_lib_path, 1);
-            break;
-
-        case AUDIT:
-            char *audit_lib_path = getenv(INPROC_AUDIT_ENV_VAR);
-            if (audit_lib_path == NULL) {
-                audit_lib_path = DEFAULT_INPROC_AUDIT_LIB_PATH;
-            }
-            setenv("LD_AUDIT", audit_lib_path, 1);
-    }
-
-    if (arguments.output_file_path != NULL) {
-        setenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
-        free(arguments.output_file_path);
-    } else {
-        unsetenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
-    }
-
     pid_t pid = fork();
+
     if (pid == 0 /*child*/) {
+        if (arguments.output_file_path != NULL) {
+            setenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
+            free(arguments.output_file_path);
+        } else {
+            unsetenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
+        }
+
+        switch(arguments.mode) {
+            case PRELOAD:
+                char *preload_lib_path = getenv(INPROC_PRELOAD_ENV_VAR);
+                if (preload_lib_path == NULL) {
+                    preload_lib_path = DEFAULT_INPROC_PRELOAD_LIB_PATH;
+                }
+                setenv("LD_PRELOAD", preload_lib_path, 1);
+                break;
+
+            case AUDIT:
+                char *audit_lib_path = getenv(INPROC_AUDIT_ENV_VAR);
+                if (audit_lib_path == NULL) {
+                    audit_lib_path = DEFAULT_INPROC_AUDIT_LIB_PATH;
+                }
+                setenv("LD_AUDIT", audit_lib_path, 1);
+                break;
+                
+            default:
+        }
+
         if (execvp(arguments.child_argv[0], arguments.child_argv) == -1) {
             perror(arguments.child_argv[0]);
             exit(EXIT_FAILURE);
         }
-    } else if (pid > 0 /*parent*/) {
+    } 
+    
+    else if (pid > 0 /*parent*/) {
         int status;
         wait(&status);
-        printf("\n~ '%s' exited with return code %u ~ \n\n", arguments.child_argv[0], WEXITSTATUS(status));
-    } else {
+        printf("\n~ '%s' exited with return code %u ~\n\n", arguments.child_argv[0], WEXITSTATUS(status));
+    } 
+    
+    else {
         perror("unforkable");
     }
     

@@ -1,0 +1,209 @@
+
+
+--- SSL_write intercepted ---
+intermediate buffer size is 72, contents: 
+
+GET / HTTP/1.1
+Host: nsuctf.ru
+User-Agent: curl/8.4.0
+Accept: */*
+
+
+
+return value is 72
+-----------------------------
+
+
+
+--- SSL_read intercepted ---
+retval is -1, no buffer, sorry
+
+----------------------------
+
+
+
+--- SSL_read intercepted ---
+retval is -1, no buffer, sorry
+
+----------------------------
+
+
+
+--- SSL_read intercepted ---
+retval is -1, no buffer, sorry
+
+----------------------------
+
+
+
+--- SSL_read intercepted ---
+intermediate buffer size is 4143 (num was 102400) contents: 
+
+HTTP/1.1 200 OK
+Server: nginx/1.21.1
+Date: Sun, 05 Nov 2023 06:29:34 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 4513
+Connection: keep-alive
+Set-Cookie: session=6e895d66-b7cd-4b45-abcd-147ea32069de.WCA38bHYx-64l4oedZxy6YC7tms; HttpOnly; Path=/; SameSite=Lax
+Strict-Transport-Security: max-age=31536000
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>NSUCTF</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="/themes/core/static/img/favicon.ico?d=bab04c63" type="image/x-icon">
+	<link rel="stylesheet" href="/themes/core/static/css/fonts.min.css?d=bab04c63">
+	<link rel="stylesheet" href="/themes/core/static/css/main.min.css?d=bab04c63">
+	<link rel="stylesheet" href="/themes/core/static/css/core.min.css?d=bab04c63">
+	
+	
+
+	
+	<script type="text/javascript">
+		var init = {
+			'urlRoot': "",
+			'csrfNonce': "053da05e312c7c18396fe4c9d25afee00601afc30cdd4fe2f77231c3724f343a",
+			'userMode': "users",
+			'userId': 0,
+			'start': null,
+			'end': null,
+			'theme_settings': null
+		}
+	</script>
+	
+</head>
+<body>
+	<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a href="/" class="navbar-brand">
+            
+                NSUCTF
+            
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#base-navbars"
+                aria-controls="base-navbars" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="base-navbars">
+            <ul class="navbar-nav mr-auto">
+                
+
+                
+                    <li class="nav-item">
+                        <a class="nav-link" href="/users">Users</a>
+                    </li>
+                    
+                
+
+                
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scoreboard">Scoreboard</a>
+                    </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/challenges">Challenges</a>
+                </li>
+            </ul>
+
+            <hr class="d-sm-flex d-md-flex d-lg-none">
+
+            <ul class="navbar-nav ml-md-auto d-block d-sm-flex d-md-flex">
+                
+                    
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">
+                                <span class="d-block" data-toggle="tooltip" data-placement="bottom" title="Register">
+                                    <i class="fas fa-user-plus d-none d-md-block d-lg-none"></i>
+                                </span>
+                                <span class="d-sm-block d-md-none d-lg-block">
+                                    <i class="fas fa-user-plus pr-1"></i>Register
+                                </span>
+                            </a>
+                        </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            <span class="d-block" data-toggle="tooltip" data-placement="bottom" title="Login">
+                                <i class="fas fa-sign-in-alt d-none d-md-block d-lg-none"></i>
+                            </span>
+                            <span class="d-sm-block d-md-none d-lg-block">
+                                <i class="fas fa-sign-in-alt pr-1"></i>Login
+                            </span>
+                        </a>
+                    </li>
+                
+            </ul>
+        </div>
+    </div>
+</nav>
+
+	<main role="main">
+		
+	<div class="container">
+	<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <img class="w-100 mx-auto d-block" style="max-width: 500px;padding: 50px;padding-top: 14vh;" src="/files/82e6673e43b92026ab8fa5fdba0a51fc/SUSlo.png" />
+        <h3 class="text-center">
+            <p>Задачи от команды <a href="https://vk.com/suslopas">SUSlo.PAS</a> для курса "Практиче
+
+----------------------------
+
+
+
+--- SSL_read intercepted ---
+intermediate buffer size is 697 (num was 697) contents: 
+
+ская информационная безопасность" в НГУ</p>           
+        </h3>
+    </div>
+</div>
+
+	</div>
+
+	</main>
+
+	<footer class="footer">
+		<div class="container text-center">
+			<a href="https://ctfd.io" class="text-secondary">
+				<small class="text-muted">Powered by CTFd</small>
+			</a>
+		</div>
+	</footer>
+
+	<script defer src="/themes/core/static/js/vendor.bundle.min.js?d=bab04c63"></script>
+	<script defer src="/themes/core/static/js/core.min.js?d=bab04c63"></script>
+	<script defer src="/themes/core/static/js/helpers.min.js?d=bab04c63"></script>
+
+	
+	<script defer src="/themes/core/static/js/pages/main.min.js?d=bab04c63"></script>
+	
+
+	
+	
+
+	
+
+	
+</body>
+</html>
+
+----------------------------
+
+
+
+--- SSL_read intercepted ---
+retval is -1, no buffer, sorry
+
+----------------------------
+
+
+
+--- SSL_read intercepted ---
+retval is -1, no buffer, sorry
+
+----------------------------
+
