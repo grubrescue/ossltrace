@@ -11,14 +11,14 @@
 #include <stdlib.h>
 
 struct arguments {
-    enum { PRELOAD, AUDIT } mode;
+    enum { PRELOAD, AUDIT, NAIVEPATCH } mode;
     char *output_file_path;
     char **child_argv;
 };
 
 void 
 print_usage(FILE *where, char *pathname) {
-    fprintf(where, "usage: %s -m|--mode: preload|audit> [command args]\n", pathname);
+    fprintf(where, "usage: %s -m|--mode: preload|audit|naivepatch> [command args]\n", pathname);
 }
 
 int 
@@ -47,6 +47,8 @@ main(int argc, char **argv) {
                     arguments.mode = PRELOAD;
                 } else if (!strcmp(optarg, "audit")) {
                     arguments.mode = AUDIT;
+                } else if (!strcmp(optarg, "naivepatch")) {
+                    arguments.mode = NAIVEPATCH;                    
                 } else {
                     print_usage(stderr, argv[0]);
                 }
@@ -72,9 +74,9 @@ main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    pid_t pid = fork();
+    // pid_t pid = fork();
 
-    if (pid == 0 /*child*/) {
+    // if (pid == 0 /*child*/) {
         if (arguments.output_file_path != NULL) {
             setenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
             free(arguments.output_file_path);
@@ -86,7 +88,7 @@ main(int argc, char **argv) {
             case PRELOAD:
                 char *preload_lib_path = getenv(INPROC_PRELOAD_ENV_VAR);
                 if (preload_lib_path == NULL) {
-                    preload_lib_path = DEFAULT_INPROC_PRELOAD_LIB_PATH;
+                    preload_lib_path = INPROC_DEFAULT_PRELOAD_LIB_PATH;
                 }
                 setenv("LD_PRELOAD", preload_lib_path, 1);
                 break;
@@ -94,11 +96,16 @@ main(int argc, char **argv) {
             case AUDIT:
                 char *audit_lib_path = getenv(INPROC_AUDIT_ENV_VAR);
                 if (audit_lib_path == NULL) {
-                    audit_lib_path = DEFAULT_INPROC_AUDIT_LIB_PATH;
+                    audit_lib_path = INPROC_DEFAULT_AUDIT_LIB_PATH;
                 }
                 setenv("LD_AUDIT", audit_lib_path, 1);
                 break;
-                
+            case NAIVEPATCH:
+                char *naivepatch_lib_path = getenv(INPROC_NAIVEPATCH_ENV_VAR);
+                if (naivepatch_lib_path == NULL) {
+                    naivepatch_lib_path = INPROC_DEFAULT_NAIVEPATCH_LIB_PATH;
+                }
+                setenv("LD_AUDIT", naivepatch_lib_path, 1);
             default:
         }
 
@@ -106,17 +113,17 @@ main(int argc, char **argv) {
             perror(arguments.child_argv[0]);
             exit(EXIT_FAILURE);
         }
-    } 
+    // } 
     
-    else if (pid > 0 /*parent*/) {
-        int status;
-        wait(&status);
-        printf("\n~ '%s' exited with return code %u ~\n\n", arguments.child_argv[0], WEXITSTATUS(status));
-    } 
+    // else if (pid > 0 /*parent*/) {
+    //     int status;
+    //     wait(&status);
+    //     printf("\n~ '%s' exited with return code %u ~\n\n", arguments.child_argv[0], WEXITSTATUS(status));
+    // } 
     
-    else {
-        perror("unforkable");
-    }
+    // else {
+    //     perror("unforkable");
+    // }
     
     return EXIT_SUCCESS;
 }

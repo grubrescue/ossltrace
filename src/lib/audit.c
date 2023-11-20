@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+
 #include "audit.h"
 
 #include <link.h>
@@ -29,8 +30,8 @@ la_objopen(struct link_map *map, Lmid_t lmid, uintptr_t *cookie) {
 }
 
 uintptr_t
-la_symbind64(Elf64_Sym *sym, unsigned int ndx, uintptr_t *refcook,
-        uintptr_t *defcook, unsigned int *flags, const char *symname) {
+la_symbind64(Elf64_Sym * sym, unsigned int ndx, uintptr_t * refcook,
+        uintptr_t * defcook, unsigned int * flags, const char * symname) {
     // printf("la_symbind64(): symname = %s; sym->st_value = %p\n",
     //         symname, (void *) sym->st_value);
     // printf("        ndx = %u; flags = %#x", ndx, *flags);

@@ -15,7 +15,7 @@ hooked_SSL_write(SSL * ssl, const void * buf, int num);
 
 // SSL_read
 void 
-set_SSL_read_callback(void *symbol);
+set_SSL_read_callback(void * symbol);
 
 void *
 get_SSL_read_callback(void);
