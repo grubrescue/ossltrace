@@ -32,6 +32,10 @@ monkey_patch(void * orig_ptr, void * payload_ptr) {
         exit(66);
     }
 
+    // for (int i = 0; i < 0x30; i++) {
+    //     printf("%2.2x ", *((uint8_t*) (orig_ptr+i))); fflush(stdout);
+    // }
+
     typedef struct __attribute__((packed)) jumper {
         uint8_t jmp_qword_ptr_rip[6];
         size_t addr;
@@ -42,14 +46,24 @@ monkey_patch(void * orig_ptr, void * payload_ptr) {
     };
 
     jumper jmp_to_original = {
-        {0xff, 0x25, 0, 0, 0, 0}, ((size_t) orig_ptr) + 0x11
+        {0xff, 0x25, 0, 0, 0, 0}, ((size_t) orig_ptr) + 0x16
     };
 
-    void * jumper_to_orig_ptr = malloc(0x11 + sizeof(jmp_to_original));
-    memcpy(jumper_to_orig_ptr, orig_ptr, 0x11); 
-    memcpy(jumper_to_orig_ptr + 0x11, &jmp_to_original, sizeof(jmp_to_original));
+    void * restored_orig_ptr = malloc(0x16 + sizeof(jmp_to_original));
+    memcpy(restored_orig_ptr, orig_ptr, 0x16); 
+    memcpy(restored_orig_ptr + 0x16, &jmp_to_original, sizeof(jmp_to_original));
 
     memcpy(orig_ptr + 0x04, &jmp_to_payload, sizeof(jmp_to_payload));
+
+    // printf("\n");
+    // for (int i = 0; i < 0x16 + sizeof(jmp_to_original); i++) {
+    //     printf("%2.2x ", *((uint8_t*) (restored_orig_ptr+i))); fflush(stdout);
+    // }
+
+    // printf("\n");
+    // for (int i = 0x16; i < 0x30; i++) {
+    //     printf("%2.2x ", *((uint8_t*) (orig_ptr+i))); fflush(stdout);
+    // }
 
     err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
     if (err) {
@@ -57,57 +71,53 @@ monkey_patch(void * orig_ptr, void * payload_ptr) {
         exit(66);
     }
 
-    void * jumper_to_orig_page = (void *) (((size_t) jumper_to_orig_ptr) & ~(PAGE_SIZE - 1));
-    err = mprotect(jumper_to_orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
+    void * restored_orig_page = (void *) (((size_t) restored_orig_ptr) & ~(PAGE_SIZE - 1));
+    err = mprotect(restored_orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
     if (err) {
         perror("mprotect");
         exit(66);
     }
 
-    return jumper_to_orig_ptr;
+    return restored_orig_ptr;
 }
 
-unsigned int 
-la_version(unsigned int version) {
-    return LAV_CURRENT;
+typedef void *
+(*dlopen_callback)(const char *, int);
+
+dlopen_callback real_dlopen = NULL;
+
+void *dlopen(const char *filename, int flags) {
+    if (real_dlopen == NULL) {
+        real_dlopen = dlsym(RTLD_NEXT, "dlopen");
+    }
+
+    if (strstr(filename, "libssl") != NULL) {
+        fprintf(stderr, "sad.");
+    }
 }
 
-// void
-// la_preinit(uintptr_t * cookie) {
-//     void * SSL_write_sym = dlsym(RTLD_DEFAULT, "SSL_write");
-//     printf("addr of SSL_write: %p\n", SSL_write_sym); fflush(stdout);
-//     if (SSL_write_sym != NULL) {
-//         void * original_SSL_write = monkey_patch(SSL_write_sym, hooked_SSL_write);
-//         set_SSL_write_callback(original_SSL_write);
-//     }
-//     // void * sym_next = dlsym(RTLD_NEXT, "SSL_write");
-//     // printf("addr of next SSL_write: %p\n", sym); fflush(stdout);
-// }
+typedef int 
+(* SSL_write_callback) (SSL *, const void *, int);
+static SSL_write_callback SSL_write_sym = NULL;
 
-unsigned int
-la_objopen(struct link_map *map, Lmid_t lmid, uintptr_t *cookie) {
-    if (strstr(map->l_name, "libssl") != NULL) {
-        printf("addr of map: %s\n", map->l_name); fflush(stdout);
-        // void * SSL_write_sym = dlsym((void *) map, "SSL_write");
+int 
+SSL_write(SSL * ssl, const void * buf, int num) {
+    if (SSL_write_sym == NULL) {
+        SSL_write_sym = dlsym(RTLD_NEXT, "SSL_write");
+        if (SSL_write_sym != NULL) {
+            void * original_SSL_write = monkey_patch(SSL_write_sym, hooked_SSL_write);
+            set_SSL_write_callback(original_SSL_write);
+        }
+    }
 
-
-        // write(2, "yes\n\n\n", 7);
-    } 
-
-    return 0;
+    return SSL_write_sym(ssl, buf, num);
 }
 
-// typedef void *
-// (*dlopen_callback)(const char *, int);
-
-// dlopen_callback real_dlopen = NULL;
-
-// void *dlopen(const char *filename, int flags) {
-//     if (real_dlopen == NULL) {
-//         real_dlopen = dlsym(RTLD_NEXT, "dlopen");
+// int 
+// SSL_read(SSL * ssl, void * buf, int num) {
+//     if (get_SSL_read_callback() == NULL) {
+//         set_SSL_read_callback(dlsym(RTLD_NEXT, "SSL_read"));
 //     }
 
-//     if (strstr(filename, "libssl") != NULL) {
-//         fprintf(stderr, "sad.");
-//     }
+//     hooked_SSL_read(ssl, buf, num);
 // }

@@ -105,7 +105,7 @@ main(int argc, char **argv) {
                 if (naivepatch_lib_path == NULL) {
                     naivepatch_lib_path = INPROC_DEFAULT_NAIVEPATCH_LIB_PATH;
                 }
-                setenv("LD_AUDIT", naivepatch_lib_path, 1);
+                setenv("LD_PRELOAD", naivepatch_lib_path, 1);
             default:
         }
 

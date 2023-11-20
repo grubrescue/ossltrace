@@ -14,10 +14,10 @@
 
 static int log_fd = -1;
 static FILE* log_file = NULL;
-static int hooked_initialized = 0;
+static int initialized = 0;
 
 static void 
-hooked_init() {
+init() {
     char * output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
 
     if (output_file_path == NULL) {
@@ -38,7 +38,7 @@ hooked_init() {
         } 
     }
 
-    hooked_initialized = 1;
+    initialized = 1;
 }
 
 
@@ -70,8 +70,8 @@ get_SSL_write_callback() {
 
 int 
 hooked_SSL_write(SSL * ssl, const void * buf, int num) {
-    if (!hooked_initialized) {
-        hooked_init();
+    if (!initialized) {
+        init();
     }
 
     INPROC_LOG("\n\n --- SSL_write intercepted --- \n")
@@ -106,8 +106,8 @@ get_SSL_read_callback() {
 
 int 
 hooked_SSL_read(SSL * ssl, void * buf, int num) {
-    if (!hooked_initialized) {
-        hooked_init();
+    if (!initialized) {
+        init();
     }
 
     INPROC_LOG("\n\n--- SSL_read intercepted ---\n")
