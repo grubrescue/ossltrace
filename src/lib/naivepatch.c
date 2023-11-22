@@ -88,7 +88,7 @@ void *dlopen(const char *filename, int flags) {
 }
 
 typedef int 
-(* SSL_write_callback) (SSL *, const void *, int);
+(*SSL_write_callback) (SSL *, const void *, int);
 static SSL_write_callback SSL_write_sym = NULL;
 
 int 
@@ -105,7 +105,7 @@ SSL_write(SSL *ssl, const void *buf, int num) {
 }
 
 typedef int 
-(* SSL_read_callback) (SSL *, void *, int);
+(*SSL_read_callback) (SSL *, void *, int);
 static SSL_read_callback SSL_read_sym = NULL;
 
 int 
