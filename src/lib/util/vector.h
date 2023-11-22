@@ -19,8 +19,8 @@ void *vector_push(vector *vec, void *value);
 void *vector_pop(vector *vec, void *value);
 size_t vector_size(vector *vec);
 void *vector_get(vector *vec, size_t idx);
-void vector_foreach(vector *vec, void (*callback_consumer)(void *item));
-void *vector_findfirst(vector *vec, int (*callback_predicate)(void *item));
+void vector_foreach(vector *vec, void (*callback_consumer)(const void *item));
+void *vector_findfirst(vector *vec, int (*callback_predicate)(const void *item));
 void vector_destroy(vector *vec);
 
 // implementation
@@ -67,13 +67,13 @@ void *vector_get(vector *vec, size_t idx) {
     return vec->arr[idx];
 }
 
-void vector_foreach(vector *vec, void (*callback_consumer)(void *item)) {
+void vector_foreach(vector *vec, void (*callback_consumer)(const void *item)) {
     for (int i = 0; i < vec->size; i++) {
         callback_consumer(vec->arr[i]);
     }
 }
 
-void *vector_findfirst(vector *vec, int (*callback_predicate)(void *item)) {
+void *vector_findfirst(vector *vec, int (*callback_predicate)(const void *item)) {
     for (int i = 0; i < vec->size; i++) {
         if (!callback_predicate(vec->arr[i])) {
             return vec->arr[i];
