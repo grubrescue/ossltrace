@@ -3,6 +3,8 @@
 #include "../common.h"
 #include <openssl/ssl.h>
 
+#define INPROC_MAX_BLACKLIST_WORD_LEN 2048
+
 // SSL_write
 void 
 set_SSL_write_callback(void *symbol);

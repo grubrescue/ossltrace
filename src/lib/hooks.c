@@ -1,21 +1,23 @@
 #include "hooks.h"
 
-#include <stddef.h>
-#include <openssl/ssl.h>
-#include <dlfcn.h>
+#include "util/vector.h"
+#include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <dlfcn.h>
 #include <unistd.h>
 #include <assert.h>
 #include <gnu/libc-version.h>   
 #include <gnu/lib-names.h>
 #include <fcntl.h>
 
+// logger
 static int log_fd = -1;
-static FILE* log_file = NULL;
-static int initialized = 0;
+static FILE *log_file = NULL;
 
-static void 
-init() {
+static void
+init_log() {
     char *output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
 
     if (output_file_path == NULL) {
@@ -25,7 +27,9 @@ init() {
     
     else {
         log_fd = open(output_file_path, O_RDWR | O_CREAT, 00660);
-        log_file = fdopen(log_fd, "w+");
+        if (log_fd != -1) {
+            log_file = fdopen(log_fd, "w+");
+        }
 
         if (log_fd == -1 || log_file == NULL) {
             perror(output_file_path);
@@ -35,10 +39,7 @@ init() {
             log_file = stdout;
         } 
     }
-
-    initialized = 1;
 }
-
 
 #define INPROC_LOG(...) \
     fprintf(log_file, __VA_ARGS__); \
@@ -47,6 +48,77 @@ init() {
 #define INPROC_LOG_BUF(buf, num) \
     write(log_fd, buf, num);
 
+
+// firewall (filter)
+static vector blacklist_words;
+char buf[INPROC_MAX_BLACKLIST_WORD_LEN] = {};
+
+static void 
+print_string(const void *val) {
+    INPROC_LOG("%s\n", val);
+}
+
+inline static void
+init_firewall() {
+    vector_init(&blacklist_words);
+
+    char *blacklist_file_path = getenv(INPROC_BLACKLIST_FILE_ENV_VAR);
+    if (blacklist_file_path == NULL) {
+        return;
+    } 
+
+    FILE *blacklist_file = fopen(blacklist_file_path, "r");
+    if (blacklist_file == NULL) {
+        perror("fopen");
+    }
+
+    char *res;
+    while ((res = fgets(buf, INPROC_MAX_BLACKLIST_WORD_LEN, blacklist_file)) != NULL) {    
+        res = strdup(res);
+        if (res != NULL) {
+
+            int last_idx = strlen(res) - 1;
+            if (res[last_idx] == '\n') {
+                res[last_idx] = 0x00;    
+            }
+            vector_push(&blacklist_words, res);
+        } else {
+            break;
+        }         
+    }
+
+    if (fclose(blacklist_file)) {                                                         
+        perror("fclose");
+    }
+
+    INPROC_LOG("\n > FORBIDDEN WORDS: \n");
+    vector_foreach(&blacklist_words, print_string);
+    INPROC_LOG("\n\n");
+}
+
+static const void *firewall_buf;
+static int firewall_num;
+static int memmem_unary_predicate(const void *needle) {
+    return memmem(firewall_buf, firewall_num, needle, strlen(needle)) != NULL ? 1 : 0;
+}
+
+char *firewall(const void *buf, int num) {
+    firewall_buf = buf;
+    return (char *) vector_findfirst(&blacklist_words, memmem_unary_predicate);
+}
+
+// main initializer
+static int initialized = 0;
+
+static void 
+init() {
+    init_log();
+    init_firewall();
+
+    initialized = 1;
+}
+
+// hooks themselves!
 
 // SSL_write
 
@@ -76,7 +148,13 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
     INPROC_LOG("intermediate buffer size is %d, contents: \n\n", num)
     INPROC_LOG_BUF(buf, num)
     INPROC_LOG("\n\n")
-    
+
+    char *occurence = firewall(buf, num);
+    if (occurence != NULL) {
+        INPROC_LOG("found %s, blocking packet!\n", occurence);
+        return -1; // todo
+    }
+
     int retval = original_SSL_write(ssl, buf, num);
 
     INPROC_LOG("return value is %d\n-----------------------------\n\n", retval)
