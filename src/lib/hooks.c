@@ -10,15 +10,13 @@
 #include <gnu/lib-names.h>
 #include <fcntl.h>
 
-// logging
-
 static int log_fd = -1;
 static FILE* log_file = NULL;
 static int initialized = 0;
 
 static void 
 init() {
-    char * output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
+    char *output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
 
     if (output_file_path == NULL) {
         log_fd = 1;
@@ -27,7 +25,7 @@ init() {
     
     else {
         log_fd = open(output_file_path, O_RDWR | O_CREAT, 00660);
-        log_file = fdopen(log_fd, "w+"); // todo убрать принтфы, либо делать flush
+        log_file = fdopen(log_fd, "w+");
 
         if (log_fd == -1 || log_file == NULL) {
             perror(output_file_path);
@@ -63,13 +61,13 @@ set_SSL_write_callback(void *symbol) {
     original_SSL_write = symbol;
 }
 
-void * 
+void *
 get_SSL_write_callback() {
     return original_SSL_write;
 }
 
 int 
-hooked_SSL_write(SSL * ssl, const void * buf, int num) {
+hooked_SSL_write(SSL *ssl, const void *buf, int num) {
     if (!initialized) {
         init();
     }
@@ -99,13 +97,13 @@ set_SSL_read_callback(void *symbol) {
     original_SSL_read = symbol;
 }
 
-void * 
+void *
 get_SSL_read_callback() {
     return original_SSL_read;
 }
 
 int 
-hooked_SSL_read(SSL * ssl, void * buf, int num) {
+hooked_SSL_read(SSL *ssl, void *buf, int num) {
     if (!initialized) {
         init();
     }
