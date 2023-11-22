@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "hooks.h"
 
 #include "util/vector.h"
@@ -8,12 +10,12 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <assert.h>
-#include <gnu/libc-version.h>   
+#include <gnu/libc-version.h>
 #include <gnu/lib-names.h>
 #include <fcntl.h>
 
 // logger
-static int log_fd = -1;
+static int log_fd = 1;
 static FILE *log_file = NULL;
 
 static void
@@ -79,7 +81,7 @@ init_firewall() {
 
             int last_idx = strlen(res) - 1;
             if (res[last_idx] == '\n') {
-                res[last_idx] = 0x00;    
+                res[last_idx] = 0;    
             }
             vector_push(&blacklist_words, res);
         } else {
@@ -91,20 +93,21 @@ init_firewall() {
         perror("fclose");
     }
 
-    INPROC_LOG("\n > FORBIDDEN WORDS: \n");
+    INPROC_LOG("\n---\n! FORBIDDEN WORDS: \n");
     vector_foreach(&blacklist_words, print_string);
-    INPROC_LOG("\n\n");
+    INPROC_LOG("---\n");
 }
 
 static const void *firewall_buf;
 static int firewall_num;
-static int memmem_unary_predicate(const void *needle) {
+static int is_buf_contains(const void *needle) {
     return memmem(firewall_buf, firewall_num, needle, strlen(needle)) != NULL ? 1 : 0;
 }
 
 char *firewall(const void *buf, int num) {
     firewall_buf = buf;
-    return (char *) vector_findfirst(&blacklist_words, memmem_unary_predicate);
+    firewall_num = num;
+    return (char *) vector_findfirst(&blacklist_words, is_buf_contains);
 }
 
 // main initializer
@@ -144,20 +147,20 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
         init();
     }
 
-    INPROC_LOG("\n\n --- SSL_write intercepted --- \n")
-    INPROC_LOG("intermediate buffer size is %d, contents: \n\n", num)
+    INPROC_LOG("\n--- SSL_write intercepted ---\nintermediate buffer size is %d, contents: \n\n", num)
     INPROC_LOG_BUF(buf, num)
-    INPROC_LOG("\n\n")
+    INPROC_LOG("\n")
 
+    int retval;
     char *occurence = firewall(buf, num);
     if (occurence != NULL) {
-        INPROC_LOG("found %s, blocking packet!\n", occurence);
-        return -1; // todo
+        INPROC_LOG("\n!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
+        retval = -1;
+    } else {
+        retval = original_SSL_write(ssl, buf, num);
     }
 
-    int retval = original_SSL_write(ssl, buf, num);
-
-    INPROC_LOG("return value is %d\n-----------------------------\n\n", retval)
+    INPROC_LOG("return value is %d\n-------------------------\n\n", retval)
     return retval;
 }
 
@@ -186,7 +189,7 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
         init();
     }
 
-    INPROC_LOG("\n\n--- SSL_read intercepted ---\n")
+    INPROC_LOG("\n--- SSL_read intercepted ---\n")
 
     int retval = original_SSL_read(ssl, buf, num);
     if (retval == -1) {
@@ -194,9 +197,17 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
     } else {
         INPROC_LOG("intermediate buffer size is %d (num was %d) contents: \n\n", retval, num)
         INPROC_LOG_BUF(buf, retval)
+        INPROC_LOG("\n");
+
+        char *occurence = firewall(buf, retval);
+
+        if (occurence != NULL) {
+            INPROC_LOG("\n!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
+            retval = -1;
+        }
     }
 
-    INPROC_LOG("\n\n----------------------------\n\n")
+    INPROC_LOG("\n----------------------------\n")
 
     return retval;
 }

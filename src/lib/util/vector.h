@@ -75,7 +75,7 @@ void vector_foreach(vector *vec, void (*callback_consumer)(const void *item)) {
 
 void *vector_findfirst(vector *vec, int (*callback_predicate)(const void *item)) {
     for (int i = 0; i < vec->size; i++) {
-        if (!callback_predicate(vec->arr[i])) {
+        if (callback_predicate(vec->arr[i])) {
             return vec->arr[i];
         }
     }
@@ -85,6 +85,7 @@ void *vector_findfirst(vector *vec, int (*callback_predicate)(const void *item))
 
 void vector_destroy(vector *vec) {
     free(vec->arr);
+
     vec->arr = NULL;
     vec->size = 0;
     vec->cap = 0;
