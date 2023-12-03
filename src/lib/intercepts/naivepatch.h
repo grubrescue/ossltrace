@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hooks.h"
+#include "../hooks.h"
 
 void *
 dlopen(const char *filename, int flags);

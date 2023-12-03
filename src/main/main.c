@@ -13,7 +13,7 @@
 struct arguments {
     enum { PRELOAD, AUDIT, NAIVEPATCH } mode;
     char *output_file_path;
-    char *blacklist_file_path;
+    char *denylist_file_path;
     char **child_argv;
 };
 
@@ -34,7 +34,7 @@ main(int argc, char **argv) {
     struct arguments arguments;
     arguments.output_file_path = NULL; 
     arguments.child_argv = NULL; 
-    arguments.blacklist_file_path = NULL;
+    arguments.denylist_file_path = NULL;
     arguments.mode = PRELOAD;
 
     int finished_parsing = 0;
@@ -45,12 +45,12 @@ main(int argc, char **argv) {
             { "method",    required_argument, NULL, 'm' },
             { "output",    required_argument, NULL, 'o' },
             { "quiet",     no_argument,       NULL, 'q' },
-            { "blacklist", required_argument, NULL, 'b' },
+            { "denylist",  required_argument, NULL, 'd' },
             { "help",      no_argument,       NULL, 'h' },
             { NULL,        0,                 NULL,  0  }
         };
 
-        int c = getopt_long(argc, argv, "+m:o:qb:h", long_options, &option_index);
+        int c = getopt_long(argc, argv, "+m:o:qd:h", long_options, &option_index);
 
         switch (c) {
             case 'm':
@@ -70,8 +70,8 @@ main(int argc, char **argv) {
             case 'q':
                 arguments.output_file_path = strdup("/dev/null");
                 break;
-            case 'b':
-                arguments.blacklist_file_path = strdup(optarg);
+            case 'd':
+                arguments.denylist_file_path = strdup(optarg);
                 break;
             case 'h':
                 print_help(stdout, argv[0]);
@@ -101,11 +101,11 @@ main(int argc, char **argv) {
         unsetenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
     }
 
-    if (arguments.blacklist_file_path != NULL) {
-        setenv(INPROC_BLACKLIST_FILE_ENV_VAR, arguments.blacklist_file_path, 1);
-        free(arguments.blacklist_file_path);
+    if (arguments.denylist_file_path != NULL) {
+        setenv(INPROC_DENYLIST_FILE_ENV_VAR, arguments.denylist_file_path, 1);
+        free(arguments.denylist_file_path);
     } else {
-        unsetenv(INPROC_BLACKLIST_FILE_ENV_VAR);
+        unsetenv(INPROC_DENYLIST_FILE_ENV_VAR);
     }
 
     switch(arguments.mode) {

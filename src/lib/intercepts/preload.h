@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hooks.h"
+#include "../hooks.h"
 
 int 
 SSL_write(SSL *ssl, const void *buf, int num);

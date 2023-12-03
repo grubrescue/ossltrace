@@ -30,13 +30,13 @@ executable: pre
 	$(CC) -o $(INPROC_BUILD_DIR)/$(INPROC_EXECUTABLE_NAME) src/main/main.c
 
 preload: pre
-	$(CC) -shared -fPIC -o $(INPROC_BUILD_DIR)/lib/$(INPROC_PRELOAD_LIB_NAME) src/lib/preload.c src/lib/hooks.c -lssl
+	$(CC) -shared -fPIC -o $(INPROC_BUILD_DIR)/lib/$(INPROC_PRELOAD_LIB_NAME) src/lib/intercepts/preload.c src/lib/hooks.c -lssl
 
 audit: pre
-	$(CC) -shared -fPIC -o $(INPROC_BUILD_DIR)/lib/$(INPROC_AUDIT_LIB_NAME) src/lib/audit.c src/lib/hooks.c -lssl
+	$(CC) -shared -fPIC -o $(INPROC_BUILD_DIR)/lib/$(INPROC_AUDIT_LIB_NAME) src/lib/intercepts/audit.c src/lib/hooks.c -lssl
 
 naivepatch: pre
-	$(CC) -shared -fPIC -o $(INPROC_BUILD_DIR)/lib/$(INPROC_NAIVEPATCH_LIB_NAME) src/lib/naivepatch.c src/lib/hooks.c -lssl
+	$(CC) -shared -fPIC -o $(INPROC_BUILD_DIR)/lib/$(INPROC_NAIVEPATCH_LIB_NAME) src/lib/intercepts/naivepatch.c src/lib/hooks.c -lssl
 
 libs: preload audit naivepatch
 

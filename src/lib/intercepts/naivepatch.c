@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 
 #include "naivepatch.h"
-#include "hooks.h"
 
 #include <stdio.h>
 #include <stdint.h>

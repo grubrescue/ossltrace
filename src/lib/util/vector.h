@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#define INPROC_VECTOR_DEFAULT_CAP 16U
+#define INPROC_VECTOR_DEFAULT_CAP 32U
 
 typedef struct vector{
     void **arr;
