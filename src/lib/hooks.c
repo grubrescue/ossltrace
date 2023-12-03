@@ -17,25 +17,14 @@
 #include <fcntl.h>
 
 // SSL_write
-
-typedef int 
-(*SSL_write_callback) (SSL *, const void *, int);
-
-static SSL_write_callback original_SSL_write = NULL;
-
-void 
-set_SSL_write(void *symbol) {
-    assert(symbol != NULL);
-    original_SSL_write = symbol;
-}
-
-void *
-get_SSL_write() {
-    return original_SSL_write;
-}
+#define GEN_SYM_NAME SSL_write
+#include "util/gen_callback_defs.h"
 
 int 
 hooked_SSL_write(SSL *ssl, const void *buf, int num) {
+    typedef int 
+    (*SSL_write_callback) (SSL *, const void *, int);
+
     INPROC_LOG("\n*** SSL_write intercepted\nintermediate buffer size is %d, contents: \n\n", num)
     INPROC_LOG_BUF(buf, num)
     INPROC_LOG("\n")
@@ -46,7 +35,7 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
         INPROC_LOG("\n!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
         retval = -1;
     } else {
-        retval = original_SSL_write(ssl, buf, num);
+        retval = ((SSL_write_callback) original_SSL_write)(ssl, buf, num);
     }
 
     INPROC_LOG("return value is %d\n***\n\n", retval)
@@ -55,23 +44,13 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
 
 
 // SSL_read
-
-static void * original_SSL_read = NULL;
-
-void 
-set_SSL_read(void *symbol) {
-    assert(symbol != NULL);
-    original_SSL_read = symbol;
-}
-
-void *
-get_SSL_read() {
-    return original_SSL_read;
-}
+#define GEN_SYM_NAME SSL_read
+#include "util/gen_callback_defs.h"
 
 int 
 hooked_SSL_read(SSL *ssl, void *buf, int num) {
-    typedef int (*SSL_read_callback) (SSL *, void *, int);\
+    typedef int 
+    (*SSL_read_callback) (SSL *, void *, int);
 
     INPROC_LOG("\n*** SSL_read intercepted\n")
 
@@ -98,27 +77,17 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
 
 
 // SSL_get_verify_result
-
-typedef long 
-(*SSL_get_verify_result_callback) (const SSL *);
-
-static SSL_get_verify_result_callback original_SSL_get_verify_result = NULL;
-
-void 
-set_SSL_get_verify_result(void *symbol) {
-    original_SSL_get_verify_result = symbol;
-}
-
-void *
-get_SSL_get_verify_result(void) {
-    return original_SSL_get_verify_result;
-}
+#define GEN_SYM_NAME SSL_get_verify_result
+#include "util/gen_callback_defs.h"
 
 long 
 hooked_SSL_get_verify_result(const SSL *ssl) {
+    typedef long 
+    (*SSL_get_verify_result_callback) (const SSL *);
+
     INPROC_LOG("\n*** SSL_get_verify_result intercepted\n")
 
-    long res = original_SSL_get_verify_result(ssl);
+    long res = ((SSL_get_verify_result_callback) original_SSL_get_verify_result)(ssl);
 
     INPROC_LOG("retval is %ld, though we'll return 0", res)
     INPROC_LOG("\n***\n")
@@ -127,28 +96,18 @@ hooked_SSL_get_verify_result(const SSL *ssl) {
 }
 
 // SSL_CTX_set_verify
-
-typedef void 
-(*SSL_CTX_set_verify_callback) (SSL_CTX *ctx, int mode, SSL_verify_cb verify);
-
-static SSL_CTX_set_verify_callback original_SSL_CTX_set_verify = NULL;
-
-void 
-set_SSL_CTX_set_verify(void *symbol) {
-    original_SSL_CTX_set_verify = symbol;
-}
-
-void *
-get_SSL_CTX_set_verify(void) {
-    return original_SSL_CTX_set_verify;
-}
+#define GEN_SYM_NAME SSL_CTX_set_verify
+#include "util/gen_callback_defs.h"
 
 void 
 hooked_SSL_CTX_set_verify(SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
+    typedef void 
+    (*SSL_CTX_set_verify_callback) (SSL_CTX *, int, SSL_verify_cb);
+
     INPROC_LOG("\n*** SSL_CTX_set_verify intercepted\n")
     INPROC_LOG("setting SSL_VERIFY_NONE");
 
-    original_SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+    ((SSL_CTX_set_verify_callback) original_SSL_CTX_set_verify)(ctx, SSL_VERIFY_NONE, NULL);
 
     INPROC_LOG("\n***\n")
 }
