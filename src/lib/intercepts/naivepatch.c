@@ -96,7 +96,7 @@ SSL_write(SSL *ssl, const void *buf, int num) {
         SSL_write_sym = dlsym(RTLD_NEXT, "SSL_write");
         if (SSL_write_sym != NULL) {
             void *original_SSL_write = monkey_patch(SSL_write_sym, hooked_SSL_write);
-            set_SSL_write_callback(original_SSL_write);
+            set_SSL_write(original_SSL_write);
         }
     }
 
@@ -113,7 +113,7 @@ SSL_read(SSL *ssl, void *buf, int num) {
         SSL_read_sym = dlsym(RTLD_NEXT, "SSL_read");
         if (SSL_read_sym != NULL) {
             void *original_SSL_read = monkey_patch(SSL_read_sym, hooked_SSL_read);
-            set_SSL_read_callback(original_SSL_read);
+            set_SSL_read(original_SSL_read);
         }
     }
 

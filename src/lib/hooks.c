@@ -24,13 +24,13 @@ typedef int
 static SSL_write_callback original_SSL_write = NULL;
 
 void 
-set_SSL_write_callback(void *symbol) {
+set_SSL_write(void *symbol) {
     assert(symbol != NULL);
     original_SSL_write = symbol;
 }
 
 void *
-get_SSL_write_callback() {
+get_SSL_write() {
     return original_SSL_write;
 }
 
@@ -56,38 +56,37 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
 
 // SSL_read
 
-typedef int 
-(*SSL_read_callback) (SSL *, void *, int);
-
-static SSL_read_callback original_SSL_read = NULL;
+static void * original_SSL_read = NULL;
 
 void 
-set_SSL_read_callback(void *symbol) {
+set_SSL_read(void *symbol) {
     assert(symbol != NULL);
     original_SSL_read = symbol;
 }
 
 void *
-get_SSL_read_callback() {
+get_SSL_read() {
     return original_SSL_read;
 }
 
 int 
 hooked_SSL_read(SSL *ssl, void *buf, int num) {
+    typedef int (*SSL_read_callback) (SSL *, void *, int);\
+
     INPROC_LOG("\n*** SSL_read intercepted\n")
 
-    int retval = original_SSL_read(ssl, buf, num);
+    int retval = ((SSL_read_callback) original_SSL_read)(ssl, buf, num);
     if (retval == -1) {
         INPROC_LOG("retval is -1, no buffer, sorry")
     } else {
         INPROC_LOG("intermediate buffer size is %d (num was %d) contents: \n\n", retval, num)
         INPROC_LOG_BUF(buf, retval)
-        INPROC_LOG("\n");
+        INPROC_LOG("\n")
 
         char *occurence = find_denylisted_words_occurence(buf, retval);
 
         if (occurence != NULL) {
-            INPROC_LOG("!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
+            INPROC_LOG("!!! FOUND %s, PACKET REFUSED !!!\n", occurence)
             retval = -1;
         }
     }
@@ -95,4 +94,61 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
     INPROC_LOG("\n***\n")
 
     return retval;
+}
+
+
+// SSL_get_verify_result
+
+typedef long 
+(*SSL_get_verify_result_callback) (const SSL *);
+
+static SSL_get_verify_result_callback original_SSL_get_verify_result = NULL;
+
+void 
+set_SSL_get_verify_result(void *symbol) {
+    original_SSL_get_verify_result = symbol;
+}
+
+void *
+get_SSL_get_verify_result(void) {
+    return original_SSL_get_verify_result;
+}
+
+long 
+hooked_SSL_get_verify_result(const SSL *ssl) {
+    INPROC_LOG("\n*** SSL_get_verify_result intercepted\n")
+
+    long res = original_SSL_get_verify_result(ssl);
+
+    INPROC_LOG("retval is %ld, though we'll return 0", res)
+    INPROC_LOG("\n***\n")
+
+    return 0;
+}
+
+// SSL_CTX_set_verify
+
+typedef void 
+(*SSL_CTX_set_verify_callback) (SSL_CTX *ctx, int mode, SSL_verify_cb verify);
+
+static SSL_CTX_set_verify_callback original_SSL_CTX_set_verify = NULL;
+
+void 
+set_SSL_CTX_set_verify(void *symbol) {
+    original_SSL_CTX_set_verify = symbol;
+}
+
+void *
+get_SSL_CTX_set_verify(void) {
+    return original_SSL_CTX_set_verify;
+}
+
+void 
+hooked_SSL_CTX_set_verify(SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
+    INPROC_LOG("\n*** SSL_CTX_set_verify intercepted\n")
+    INPROC_LOG("setting SSL_VERIFY_NONE");
+
+    original_SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+
+    INPROC_LOG("\n***\n")
 }

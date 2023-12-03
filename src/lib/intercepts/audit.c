@@ -23,14 +23,14 @@ uintptr_t
 la_symbind64(Elf64_Sym *sym, unsigned int ndx, uintptr_t *refcook,
         uintptr_t *defcook, unsigned int *flags, const char *symname) {
     if (!strcmp(symname,"SSL_write")) {
-        if (get_SSL_write_callback() == NULL) {
-            set_SSL_write_callback((void *) sym->st_value);
+        if (get_SSL_write() == NULL) {
+            set_SSL_write((void *) sym->st_value);
         }
 
         return (uintptr_t) hooked_SSL_write;
     } else if (!strcmp(symname,"SSL_read")) {
-        if (get_SSL_read_callback() == NULL) {
-            set_SSL_read_callback((void *) sym->st_value);
+        if (get_SSL_read() == NULL) {
+            set_SSL_read((void *) sym->st_value);
         }
 
         return (uintptr_t) hooked_SSL_read;
