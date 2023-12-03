@@ -12,6 +12,7 @@
 
 struct arguments {
     enum { PRELOAD, AUDIT, NAIVEPATCH } mode;
+    int  ignore_ca;
     char *output_file_path;
     char *denylist_file_path;
     char **child_argv;
@@ -20,7 +21,7 @@ struct arguments {
 void 
 print_usage(FILE *where, char *pathname) {
     fprintf(where, "usage: %s [options] command [command args]\n", pathname);
-    fprintf(where, "check list of options by typing %s -h/--help\n", pathname);
+    fprintf(where, "see list of options by typing %s -h/--help\n", pathname);
 }
 
 void 
@@ -36,21 +37,23 @@ main(int argc, char **argv) {
     arguments.child_argv = NULL; 
     arguments.denylist_file_path = NULL;
     arguments.mode = PRELOAD;
+    arguments.ignore_ca = 0;
 
     int finished_parsing = 0;
     while (!finished_parsing) {
         int option_index = 0;
 
         static struct option long_options[] = {
-            { "method",    required_argument, NULL, 'm' },
+            { "mode",      required_argument, NULL, 'm' },
             { "output",    required_argument, NULL, 'o' },
             { "quiet",     no_argument,       NULL, 'q' },
             { "denylist",  required_argument, NULL, 'd' },
             { "help",      no_argument,       NULL, 'h' },
+            { "ignore-ca", no_argument,       NULL, 'i' },
             { NULL,        0,                 NULL,  0  }
         };
 
-        int c = getopt_long(argc, argv, "+m:o:qd:h", long_options, &option_index);
+        int c = getopt_long(argc, argv, "+m:o:qd:hi", long_options, &option_index);
 
         switch (c) {
             case 'm':
@@ -58,7 +61,7 @@ main(int argc, char **argv) {
                     arguments.mode = PRELOAD;
                 } else if (!strcmp(optarg, "audit")) {
                     arguments.mode = AUDIT;
-                } else if (!strcmp(optarg, "naivepatch")) {
+                } else if (!strcmp(optarg, "naive_patch")) {
                     arguments.mode = NAIVEPATCH;                    
                 } else {
                     print_usage(stderr, argv[0]);
@@ -76,6 +79,9 @@ main(int argc, char **argv) {
             case 'h':
                 print_help(stdout, argv[0]);
                 exit(EXIT_SUCCESS);
+                break;
+            case 'i':
+                arguments.ignore_ca = 1;
                 break;
             case '?':
                 print_usage(stderr, argv[0]);
@@ -106,6 +112,12 @@ main(int argc, char **argv) {
         free(arguments.denylist_file_path);
     } else {
         unsetenv(INPROC_DENYLIST_FILE_ENV_VAR);
+    }
+
+    if (arguments.ignore_ca) {
+        setenv(INPROC_IGNORE_CA_ENV_VAR, "1", 1);
+    } else {
+        unsetenv(INPROC_IGNORE_CA_ENV_VAR);
     }
 
     switch(arguments.mode) {

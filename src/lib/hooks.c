@@ -63,7 +63,6 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
         INPROC_LOG("\n")
 
         char *occurence = find_denylisted_words_occurence(buf, retval);
-
         if (occurence != NULL) {
             INPROC_LOG("!!! FOUND %s, PACKET REFUSED !!!\n", occurence)
             retval = -1;
@@ -75,8 +74,19 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
     return retval;
 }
 
-
 // SSL_get_verify_result
+inline static int 
+is_ca_ignored() {
+    static int is_ignored = -1;
+    if (is_ignored == -1) {
+        char *ca_env = getenv(INPROC_IGNORE_CA_ENV_VAR);
+        is_ignored = ca_env != NULL ? 1 : 0;
+    }
+
+    return is_ignored;
+}
+
+
 #define GEN_SYM_NAME SSL_get_verify_result
 #include "util/gen_callback_defs.h"
 
@@ -88,11 +98,13 @@ hooked_SSL_get_verify_result(const SSL *ssl) {
     INPROC_LOG("\n*** SSL_get_verify_result intercepted\n")
 
     long res = ((SSL_get_verify_result_callback) original_SSL_get_verify_result)(ssl);
+    if (is_ca_ignored()) {
+        INPROC_LOG("retval is %ld, though we'll return 0\n***\n", res)
+        return 0;    
+    } else {
+        INPROC_LOG("retval is %ld, thus returning %ld\n***\n", res, res)
+    }
 
-    INPROC_LOG("retval is %ld, though we'll return 0", res)
-    INPROC_LOG("\n***\n")
-
-    return 0;
 }
 
 // SSL_CTX_set_verify
@@ -105,9 +117,13 @@ hooked_SSL_CTX_set_verify(SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
     (*SSL_CTX_set_verify_callback) (SSL_CTX *, int, SSL_verify_cb);
 
     INPROC_LOG("\n*** SSL_CTX_set_verify intercepted\n")
-    INPROC_LOG("setting SSL_VERIFY_NONE");
-
-    ((SSL_CTX_set_verify_callback) original_SSL_CTX_set_verify)(ctx, SSL_VERIFY_NONE, NULL);
+    if (is_ca_ignored()) {
+        INPROC_LOG("setting SSL_VERIFY_NONE");
+        ((SSL_CTX_set_verify_callback) original_SSL_CTX_set_verify)(ctx, SSL_VERIFY_NONE, NULL);
+    } else {
+        INPROC_LOG("doing nothing")
+        ((SSL_CTX_set_verify_callback) original_SSL_CTX_set_verify)(ctx, mode, verify);
+    }
 
     INPROC_LOG("\n***\n")
 }

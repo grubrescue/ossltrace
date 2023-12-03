@@ -13,16 +13,15 @@
 
 #define INPROC_MAX_DENYLIST_WORD_LEN 2048
 
-static int firewall_initialized = 0;
 static vector denylist_words;
 
-// static void 
-// print_string(const void *val) {
-//     INPROC_LOG("%s\n", val)
-// }
-
-static void
+inline static void
 init_firewall() {
+    static int firewall_initialized = 0;
+    if (firewall_initialized) {
+        return;
+    }
+
     vector_init(&denylist_words);
 
     char *denylist_file_path = getenv(INPROC_DENYLIST_FILE_ENV_VAR);
@@ -55,27 +54,24 @@ init_firewall() {
         perror("fclose");
     }
 
+    // void 
+    // print_string(const void *val) {
+    //     INPROC_LOG("%s\n", val)
+    // }
+
     // INPROC_LOG("\n! ! ! FORBIDDEN WORDS: \n")
     // vector_foreach(&denylist_words, print_string);
     // INPROC_LOG("! ! !\n")
 }
 
-static const void *firewall_buf;
-static int firewall_num;  
-
-static int 
-is_buf_contains(const void *needle) {
-    return memmem(firewall_buf, firewall_num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
-}
-
 char *
 find_denylisted_words_occurence(const void *buf, int num) {
-    if (!firewall_initialized) {  
-        init_firewall();
-        firewall_initialized = 1;
+    init_firewall();
+
+    int 
+    is_buf_contains(const void *needle) {
+        return memmem(buf, num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
     }
-    
-    firewall_buf = buf;
-    firewall_num = num;
+
     return (char *) vector_findfirst(&denylist_words, is_buf_contains); // todo more adequate
 }
