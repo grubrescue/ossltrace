@@ -10,7 +10,7 @@ static FILE *log_file = NULL;
 
 static void
 init_log() {
-    char *output_file_path = getenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
+    char *output_file_path = getenv(OSSLTRACE_LOG_OUTPUT_FILE_ENV_VAR);
 
     if (output_file_path == NULL) {
         log_fd = 1;
@@ -34,11 +34,11 @@ init_log() {
     }
 }
 
-#define INPROC_LOG(...) \
+#define OSSLTRACE_LOG(...) \
     if (log_fd == -1) { init_log(); } \
     fprintf(log_file, __VA_ARGS__); \
     fflush(log_file);
 
-#define INPROC_LOG_BUF(buf, num) \
+#define OSSLTRACE_LOG_BUF(buf, num) \
     if (log_fd == -1) { init_log(); } \
     write(log_fd, buf, num);

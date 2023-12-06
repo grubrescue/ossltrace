@@ -11,32 +11,38 @@
 #include <fcntl.h>
 #include <string.h>
 
-#define INPROC_MAX_DENYLIST_WORD_LEN 2048
+// #include <errno.h>
+
+#define OSSLTRACE_MAX_DENYLIST_WORD_LEN 2048
 
 static vector denylist_words;
 
-inline static void
+static void // todo корректная работа
 init_firewall() {
     static int firewall_initialized = 0;
     if (firewall_initialized) {
         return;
     }
 
+    firewall_initialized = 1;
+
     vector_init(&denylist_words);
 
-    char *denylist_file_path = getenv(INPROC_DENYLIST_FILE_ENV_VAR);
+    char *denylist_file_path = getenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);
     if (denylist_file_path == NULL) {
+        OSSLTRACE_LOG("%s", "filename not found in env vars; filter won't work");
         return;
     } 
 
     FILE *denylist_file = fopen(denylist_file_path, "r");
     if (denylist_file == NULL) {
         perror("fopen");
+        return;
     }
 
-    char buf[INPROC_MAX_DENYLIST_WORD_LEN] = {};
+    char buf[OSSLTRACE_MAX_DENYLIST_WORD_LEN] = {};
     char *res;
-    while ((res = fgets(buf, INPROC_MAX_DENYLIST_WORD_LEN, denylist_file)) != NULL) {    
+    while ((res = fgets(buf, OSSLTRACE_MAX_DENYLIST_WORD_LEN, denylist_file)) != NULL) {    
         res = strdup(res);
         if (res != NULL) {
 
@@ -54,14 +60,16 @@ init_firewall() {
         perror("fclose");
     }
 
-    // void 
-    // print_string(const void *val) {
-    //     INPROC_LOG("%s\n", val)
-    // }
+    void 
+    print_string(const void *val) {
+        OSSLTRACE_LOG("%s\n", val)
+    }
 
-    // INPROC_LOG("\n! ! ! FORBIDDEN WORDS: \n")
-    // vector_foreach(&denylist_words, print_string);
-    // INPROC_LOG("! ! !\n")
+    OSSLTRACE_LOG("\n! ! ! FORBIDDEN WORDS: \n")
+    vector_foreach(&denylist_words, print_string);
+    OSSLTRACE_LOG("! ! !\n")
+
+    firewall_initialized = 1;
 }
 
 char *

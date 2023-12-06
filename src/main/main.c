@@ -101,45 +101,49 @@ main(int argc, char **argv) {
     }
 
     if (arguments.output_file_path != NULL) {
-        setenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
+        setenv(OSSLTRACE_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
         free(arguments.output_file_path);
     } else {
-        unsetenv(INPROC_LOG_OUTPUT_FILE_ENV_VAR);
+        unsetenv(OSSLTRACE_LOG_OUTPUT_FILE_ENV_VAR);
     }
 
     if (arguments.denylist_file_path != NULL) {
-        setenv(INPROC_DENYLIST_FILE_ENV_VAR, arguments.denylist_file_path, 1);
+        int err = setenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR, arguments.denylist_file_path, 1);
+        if (err) {
+            perror("setenv");
+            exit(EXIT_FAILURE);
+        }
         free(arguments.denylist_file_path);
     } else {
-        unsetenv(INPROC_DENYLIST_FILE_ENV_VAR);
+        unsetenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);
     }
 
     if (arguments.ignore_ca) {
-        setenv(INPROC_IGNORE_CA_ENV_VAR, "1", 1);
+        setenv(OSSLTRACE_IGNORE_CA_ENV_VAR, "1", 1);
     } else {
-        unsetenv(INPROC_IGNORE_CA_ENV_VAR);
+        unsetenv(OSSLTRACE_IGNORE_CA_ENV_VAR);
     }
 
     switch(arguments.mode) {
         case PRELOAD:
-            char *preload_lib_path = getenv(INPROC_PRELOAD_ENV_VAR);
+            char *preload_lib_path = getenv(OSSLTRACE_PRELOAD_ENV_VAR);
             if (preload_lib_path == NULL) {
-                preload_lib_path = INPROC_DEFAULT_PRELOAD_LIB_PATH;
+                preload_lib_path = OSSLTRACE_DEFAULT_PRELOAD_LIB_PATH;
             }
             setenv("LD_PRELOAD", preload_lib_path, 1);
             break;
 
         case AUDIT:
-            char *audit_lib_path = getenv(INPROC_AUDIT_ENV_VAR);
+            char *audit_lib_path = getenv(OSSLTRACE_AUDIT_ENV_VAR);
             if (audit_lib_path == NULL) {
-                audit_lib_path = INPROC_DEFAULT_AUDIT_LIB_PATH;
+                audit_lib_path = OSSLTRACE_DEFAULT_AUDIT_LIB_PATH;
             }
             setenv("LD_AUDIT", audit_lib_path, 1);
             break;
         case NAIVEPATCH:
-            char *naivepatch_lib_path = getenv(INPROC_NAIVEPATCH_ENV_VAR);
+            char *naivepatch_lib_path = getenv(OSSLTRACE_NAIVEPATCH_ENV_VAR);
             if (naivepatch_lib_path == NULL) {
-                naivepatch_lib_path = INPROC_DEFAULT_NAIVEPATCH_LIB_PATH;
+                naivepatch_lib_path = OSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH;
             }
             setenv("LD_PRELOAD", naivepatch_lib_path, 1);
         default:

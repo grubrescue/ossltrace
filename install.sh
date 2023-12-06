@@ -1,11 +1,11 @@
 #!/bin/env sh
 
 # Variables.
-export INPROC_AUDIT_LIB_NAME=libinproc_audit.so
-export INPROC_PRELOAD_LIB_NAME=libinproc_preload.so
-export INPROC_NAIVEPATCH_LIB_NAME=libinproc_naivepatch.so
-export INPROC_EXECUTABLE_NAME=inproc
-export INPROC_BUILD_DIR=build
+export OSSLTRACE_AUDIT_LIB_NAME=libossltrace_audit.so
+export OSSLTRACE_PRELOAD_LIB_NAME=libossltrace_preload.so
+export OSSLTRACE_NAIVEPATCH_LIB_NAME=libossltrace_naivepatch.so
+export OSSLTRACE_EXECUTABLE_NAME=ossltrace
+export OSSLTRACE_BUILD_DIR=build
 
 # Subroutines.
 
@@ -25,7 +25,7 @@ compile_and_mv_lib() {
     exit_if_unsuccessful $? 1
 
     echo "Moving libs to /usr/lib; need sudo"
-    sudo mv -v $INPROC_BUILD_DIR/lib/* /usr/lib
+    sudo mv -v $OSSLTRACE_BUILD_DIR/lib/* /usr/lib
 
     exit_if_unsuccessful $? 2
 }
@@ -45,12 +45,12 @@ clean() {
 
 # !!! The script itself.
 
-echo "Running inproc install script..."
+echo "Running ossltrace install script..."
 
 compile_and_mv_lib
 compile_main
 clean 
 
-echo "Executable is located at $INPROC_BUILD_DIR/$INPROC_EXECUTABLE_NAME"
+echo "Executable is located at $OSSLTRACE_BUILD_DIR/$OSSLTRACE_EXECUTABLE_NAME"
 
 echo "Truly done"

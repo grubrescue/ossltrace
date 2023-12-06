@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#define INPROC_VECTOR_DEFAULT_CAP 32U
+#define OSSLTRACE_VECTOR_DEFAULT_CAP 32U
 
 typedef struct vector{
     void **arr;
@@ -45,7 +45,7 @@ void vector_init_cap(vector *vec, size_t cap) {
 }
 
 void vector_init(vector *vec) {
-    vector_init_cap(vec, INPROC_VECTOR_DEFAULT_CAP);
+    vector_init_cap(vec, OSSLTRACE_VECTOR_DEFAULT_CAP);
 }
 
 void *vector_push(vector *vec, void *value) {
