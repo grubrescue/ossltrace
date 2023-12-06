@@ -29,7 +29,7 @@ greet
 
 ## Command to start:
 ```
-badum@tss:~/ossltrace# build/ossltrace --denylist build/deny.txt sudo nginx -g 'daemon off;'
+root@tss:~/ossltrace# build/ossltrace --denylist build/deny.txt nginx -g 'daemon off;'
 ```
 
 ## Regular request
