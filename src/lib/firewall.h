@@ -24,8 +24,6 @@ init_firewall() {
         return;
     }
 
-    firewall_initialized = 1;
-
     vector_init(&denylist_words);
 
     char *denylist_file_path = getenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);

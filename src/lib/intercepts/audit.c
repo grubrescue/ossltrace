@@ -13,7 +13,8 @@ la_version(unsigned int version) {
 unsigned int
 la_objopen(struct link_map *map, Lmid_t lmid, uintptr_t *cookie) {
     if (strstr(map->l_name, "libssl") != NULL || strstr(map->l_name, "libcrypto") != NULL) {
-        return LA_FLG_BINDTO | LA_FLG_BINDFROM;
+        // return LA_FLG_BINDTO | LA_FLG_BINDFROM;
+        return LA_FLG_BINDTO;
     } else {
         return 0;
     }

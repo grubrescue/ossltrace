@@ -80,7 +80,7 @@ void *dlopen(const char *filename, int flags) {
     }
 
     if (filename != NULL && strstr(filename, "ssl") != NULL) {
-        fprintf(stderr, "sad."); fflush(stderr);
+        fprintf(stderr, "sad. found ssl lib"); fflush(stderr);
     } 
     
     return real_dlopen(filename, flags);
