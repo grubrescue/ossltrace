@@ -81,5 +81,5 @@ find_denylisted_words_occurence(const void *buf, int num) {
         return memmem(buf, num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
     }
 
-    return (char *) vector_findfirst(&denylist_words, is_buf_contains); // todo more adequate
+    return (char *) vector_findfirst(&denylist_words, is_buf_contains); 
 }

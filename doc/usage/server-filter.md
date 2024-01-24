@@ -28,13 +28,14 @@ greet
 ```
 
 ## Command to start:
-```
-root@tss:~/ossltrace# build/ossltrace --denylist build/deny.txt nginx -g 'daemon off;'
+
+```sh
+badum@tss:~/ossltrace# build/ossltrace --denylist build/deny.txt sudo nginx -g 'daemon off;'
 ```
 
 ## Regular request
-```
-curl -k -L --http1.1 https://localhost:443/
+```sh
+badum@tss:~/ossltrace# curl -k -L --http1.1 https://localhost:443/
 ```
 
 Client output:

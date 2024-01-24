@@ -10,8 +10,10 @@ sudo cp server.* /etc/nginx/certs/
 
 ## enabled (-i/--ignore-ca)
 
-```
+```sh
 badum@tss:~/ossltrace$ build/ossltrace --ignore-ca curl -L --http1.1 -o/dev/null https://localhost:443/
+```
+```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
@@ -64,8 +66,10 @@ retval is -1, no buffer, sorry
 
 ## disabled
 
-```
+```sh
 badum@tss:~/ossltrace$ build/ossltrace curl -L --http1.1 -o/dev/null https://localhost:443/
+```
+```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
