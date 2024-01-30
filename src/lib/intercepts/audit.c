@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 
-#include "audit.h"
+#include "../hooks.h"
 
 #include <link.h>
 #include <stdio.h>

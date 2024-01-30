@@ -18,6 +18,10 @@ ifeq ($(OSSLTRACE_BUILD_DIR),)
 OSSLTRACE_BUILD_DIR := build
 endif
 
+ifeq ($(OSSLTRACE_LIBS_PATH),)
+OSSLTRACE_LIBS_PATH := /usr/lib/
+endif
+
 CC=gcc
 
 all: pre executable libs 

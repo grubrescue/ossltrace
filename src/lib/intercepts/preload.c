@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 
-#include "preload.h"
+#include "../hooks.h"
 
 #include <stddef.h>
 #include <dlfcn.h>
