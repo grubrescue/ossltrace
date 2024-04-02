@@ -1,58 +1,47 @@
-# vars
-ifeq ($(OSSLTRACE_AUDIT_LIB_NAME),)
-OSSLTRACE_AUDIT_LIB_NAME := libossltrace_audit.so
+OPENSSL_FOUND := $(shell pkg-config --exists openssl && echo yes || echo no)
+ifeq ($(OPENSSL_FOUND),yes)
+    CC_FLAGS += -DHAS_OPENSSL
+else
+    $(error OpenSSL is not installed)
 endif
 
-ifeq ($(OSSLTRACE_PRELOAD_LIB_NAME),)
-OSSLTRACE_PRELOAD_LIB_NAME := libossltrace_preload.so
-endif
+audit_lib_name = libaudit.so
+preload_lib_name = libpreload.so
+naivepatch_lib_name = libnaivepatch.so
+executable_name = ossltrace
+build_dir = build
+libs_path = /usr/lib/
 
-ifeq ($(OSSLTRACE_NAIVEPATCH_LIB_NAME),)
-OSSLTRACE_NAIVEPATCH_LIB_NAME := libossltrace_naivepatch.so
-endif
-
-ifeq ($(OSSLTRACE_EXECUTABLE_NAME),)
-OSSLTRACE_EXECUTABLE_NAME := ossltrace
-endif
-
-ifeq ($(OSSLTRACE_BUILD_DIR),)
-OSSLTRACE_BUILD_DIR := build
-endif
-
-ifeq ($(OSSLTRACE_LIBS_PATH),)
-OSSLTRACE_LIBS_PATH := /usr/lib/
-endif
-
-CC=gcc
+CC = gcc
+EXECUTABLE_CFLAGS = -DOSSLTRACE_DEFAULT_AUDIT_LIB_PATH='"$(libs_path)$(audit_lib_name)"' -DOSSLTRACE_DEFAULT_PRELOAD_LIB_PATH='"$(libs_path)$(preload_lib_name)"' -DOSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH='"$(libs_path)$(naivepatch_lib_name)"'
 
 
-#tasks
-all: install #maybe переделать
+all: install # todo может не совсем то что хотелось
 
 pre:
-	mkdir -p $(OSSLTRACE_BUILD_DIR)
-	mkdir -p $(OSSLTRACE_BUILD_DIR)/lib
+	mkdir -p $(build_dir)
+	mkdir -p $(build_dir)/lib
 
 build-executable: pre
-	$(CC) -o $(OSSLTRACE_BUILD_DIR)/$(OSSLTRACE_EXECUTABLE_NAME) src/main/main.c
+	$(CC) $(EXECUTABLE_CFLAGS) -o $(build_dir)/$(executable_name) src/main/main.c
 
 build-preload: pre
-	$(CC) -shared -fPIC -o $(OSSLTRACE_BUILD_DIR)/lib/$(OSSLTRACE_PRELOAD_LIB_NAME) src/lib/intercepts/preload.c -lssl
+	$(CC) -shared -fPIC -o $(build_dir)/lib/$(preload_lib_name) src/lib/intercepts/preload.c -lssl
 
 build-audit: pre
-	$(CC) -shared -fPIC -o $(OSSLTRACE_BUILD_DIR)/lib/$(OSSLTRACE_AUDIT_LIB_NAME) src/lib/intercepts/audit.c -lssl
+	$(CC) -shared -fPIC -o $(build_dir)/lib/$(audit_lib_name) src/lib/intercepts/audit.c -lssl
 
 build-naivepatch: pre
-	$(CC) -shared -fPIC -o $(OSSLTRACE_BUILD_DIR)/lib/$(OSSLTRACE_NAIVEPATCH_LIB_NAME) src/lib/intercepts/naivepatch.c -lssl
+	$(CC) -shared -fPIC -o $(build_dir)/lib/$(naivepatch_lib_name) src/lib/intercepts/naivepatch.c -lssl
 
 build-libs: build-preload build-audit build-naivepatch
 
 build: build-libs build-executable
 
 copy-libs: build-libs
-	sudo mv -v $(OSSLTRACE_BUILD_DIR)/lib/* $(OSSLTRACE_LIBS_PATH)
+	install -v $(build_dir)/lib/* $(libs_path)
 
 install: build copy-libs clean
 
-clean: pre
-	rm -rfv $(OSSLTRACE_BUILD_DIR)/lib/
+clean:
+	rm -rfv $(build_dir)/lib/

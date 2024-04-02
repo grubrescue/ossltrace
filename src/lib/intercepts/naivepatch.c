@@ -32,7 +32,7 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     }
     void *orig_page = (void *) (((size_t) orig_ptr) & ~(PAGE_SIZE - 1));
 
-    int err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
+    int err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE);
     if (err) {
         perror("mprotect");
         exit(66);
@@ -53,7 +53,8 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
         {0xff, 0x25, 0, 0, 0, 0}, ((size_t) orig_ptr) + 0x12
     };
 
-    void *restored_orig_ptr = malloc(0x16 + sizeof(jmp_to_original));
+    // void *restored_orig_ptr = malloc(0x16 + sizeof(jmp_to_original));
+    void *restored_orig_ptr = mmap(NULL, 0x16 + sizeof(jmp_to_original), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     memcpy(restored_orig_ptr, orig_ptr, 0x16); 
     memcpy(restored_orig_ptr + 0x16, &jmp_to_original, sizeof(jmp_to_original));
 
@@ -67,7 +68,7 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     }
 
     void *restored_orig_page = (void *) (((size_t) restored_orig_ptr) & ~(PAGE_SIZE - 1));
-    err = mprotect(restored_orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
+    err = mprotect(restored_orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
     if (err) {
         perror("mprotect");
         exit(66);
