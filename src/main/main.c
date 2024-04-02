@@ -18,17 +18,20 @@ struct Arguments {
     char **child_argv;
 };
 
+
 void 
 print_usage(FILE *where, char *pathname) {
     fprintf(where, "usage: %s [options] command [command args]\n", pathname);
     fprintf(where, "see list of options by typing %s -h/--help\n", pathname);
 }
 
+
 void 
 print_help(FILE *where, char *pathname) {
     print_usage(where, pathname);
     fprintf(stdout, "no help yet, sorry!\n\n");
 }
+
 
 int 
 main(int argc, char **argv) {
@@ -140,12 +143,15 @@ main(int argc, char **argv) {
             }
             setenv("LD_AUDIT", audit_lib_path, 1);
             break;
+
         case NAIVEPATCH:
             char *naivepatch_lib_path = getenv(OSSLTRACE_NAIVEPATCH_ENV_VAR);
             if (naivepatch_lib_path == NULL) {
                 naivepatch_lib_path = OSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH;
             }
             setenv("LD_PRELOAD", naivepatch_lib_path, 1);
+            break;
+            
         default:
     }
 

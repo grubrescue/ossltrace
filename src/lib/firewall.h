@@ -2,7 +2,6 @@
 
 #define _GNU_SOURCE
 
-#include "../common.h"
 #include "util/vector.h"
 #include "logger.h"
 
@@ -11,27 +10,23 @@
 #include <fcntl.h>
 #include <string.h>
 
-// #include <errno.h>
-
 #define OSSLTRACE_MAX_DENYLIST_WORD_LEN 2048
 
-static vector denylist_words;
+static vector denylist_strings;
+static volatile int initialized = 0;
 
-static void // todo корректная работа
+static void
 init_firewall() {
-    static int firewall_initialized = 0;
-    if (firewall_initialized) {
+    if (initialized) {
+        OSSLTRACE_LOG("something strange: firewaller initialized twice\n");
         return;
     }
 
-    firewall_initialized = 1; // todo лучше во внешнюю переменную перенести мб???
-    // а вообще вся инициализация в самом начале, перед mainом
-
-    vector_init(&denylist_words);
+    vector_init(&denylist_strings);
 
     char *denylist_file_path = getenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);
     if (denylist_file_path == NULL) {
-        OSSLTRACE_LOG("%s", "filter: filename not found in env vars; filter won't work\n");
+        OSSLTRACE_LOG("filter: filename not found in env vars; filter won't work\n");
         return;
     } 
 
@@ -51,7 +46,7 @@ init_firewall() {
             if (res[last_idx] == '\n') {
                 res[last_idx] = 0;    
             }
-            vector_push(&denylist_words, res);
+            vector_push(&denylist_strings, res);
         } else {
             break;
         }         
@@ -66,19 +61,17 @@ init_firewall() {
         OSSLTRACE_LOG("%s\n", val)
     }
 
-    OSSLTRACE_LOG("\n! ! ! FORBIDDEN WORDS: \n")
-    vector_foreach(&denylist_words, print_string);
+    OSSLTRACE_LOG("\n! ! ! FORBIDDEN STRINGS: \n")
+    vector_foreach(&denylist_strings, print_string);
     OSSLTRACE_LOG("! ! !\n")
 }
 
 char *
-find_denylisted_words_occurence(const void *buf, int num) {
-    init_firewall();
-
+find_denylisted_strings_occurence(const void *buf, int num) {
     int 
     is_buf_contains(const void *needle) {
         return memmem(buf, num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
     }
 
-    return (char *) vector_findfirst(&denylist_words, is_buf_contains); 
+    return (char *) vector_findfirst(&denylist_strings, is_buf_contains); 
 }

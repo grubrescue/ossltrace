@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include "../hooks.h"
+#include "../initializer.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -10,6 +11,13 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <link.h>
+
+__attribute__((constructor)) 
+void
+initialize_constructor() {
+    ossl_initialize();
+}
+
 
 static void *
 monkey_patch(void *orig_ptr, void *payload_ptr) {
@@ -68,12 +76,14 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     return restored_orig_ptr;
 }
 
-typedef void *
-(*dlopen_callback)(const char *, int);
 
-dlopen_callback real_dlopen = NULL;
+
+static void *real_dlopen = NULL;
 
 void *dlopen(const char *filename, int flags) {
+    typedef void *
+    (*dlopen_callback)(const char *, int);
+
     write(2, "yes", 4);
     if (real_dlopen == NULL) {
         real_dlopen = dlsym(RTLD_NEXT, "dlopen");
@@ -83,39 +93,41 @@ void *dlopen(const char *filename, int flags) {
         fprintf(stderr, "sad. found ssl lib"); fflush(stderr);
     } 
     
-    return real_dlopen(filename, flags);
+    return ((dlopen_callback) real_dlopen)(filename, flags);
 }
 
-typedef int 
-(*SSL_write_callback) (SSL *, const void *, int);
-static SSL_write_callback SSL_write_sym = NULL;
+
+static void *SSL_write_sym = NULL;
 
 int 
 SSL_write(SSL *ssl, const void *buf, int num) {
+    typedef int 
+    (*SSL_write_callback) (SSL *, const void *, int);
+
     if (SSL_write_sym == NULL) {
         SSL_write_sym = dlsym(RTLD_NEXT, "SSL_write");
         if (SSL_write_sym != NULL) {
-            void *original_SSL_write = monkey_patch(SSL_write_sym, hooked_SSL_write);
-            set_SSL_write(original_SSL_write);
+            original_SSL_write = monkey_patch(SSL_write_sym, hooked_SSL_write);
         }
     }
 
-    return SSL_write_sym(ssl, buf, num);
+    return ((SSL_write_callback) SSL_write_sym)(ssl, buf, num);
 }
 
-typedef int 
-(*SSL_read_callback) (SSL *, void *, int);
-static SSL_read_callback SSL_read_sym = NULL;
+
+static void *SSL_read_sym = NULL;
 
 int 
 SSL_read(SSL *ssl, void *buf, int num) {
+    typedef int 
+    (*SSL_read_callback) (SSL *, void *, int);
+
     if (SSL_read_sym == NULL) {
         SSL_read_sym = dlsym(RTLD_NEXT, "SSL_read");
         if (SSL_read_sym != NULL) {
-            void *original_SSL_read = monkey_patch(SSL_read_sym, hooked_SSL_read);
-            set_SSL_read(original_SSL_read);
+            original_SSL_read = monkey_patch(SSL_read_sym, hooked_SSL_read);
         }
     }
 
-    return SSL_read_sym(ssl, buf, num);
+    return ((SSL_read_callback) SSL_read_sym)(ssl, buf, num);
 }

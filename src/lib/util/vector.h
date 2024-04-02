@@ -2,14 +2,17 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define OSSLTRACE_VECTOR_DEFAULT_CAP 32U
+
 
 typedef struct vector{
     void **arr;
     size_t size;
     size_t cap;
 } vector;
+
 
 // methods
 // nulls NOT supposed.
@@ -22,6 +25,7 @@ void *vector_get(vector *vec, size_t idx);
 void vector_foreach(vector *vec, void (*callback_consumer)(const void *item));
 void *vector_findfirst(vector *vec, int (*callback_predicate)(const void *item));
 void vector_destroy(vector *vec);
+
 
 // implementation
 static void vector_ensure_size(vector *vec) {
