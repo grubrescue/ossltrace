@@ -27,7 +27,7 @@ CC=gcc
 
 
 #tasks
-#all: pre executable libs 
+all: install #maybe переделать
 
 pre:
 	mkdir -p $(OSSLTRACE_BUILD_DIR)
@@ -47,8 +47,12 @@ build-naivepatch: pre
 
 build-libs: build-preload build-audit build-naivepatch
 
-libs: build-libs # потом убрать
-executable: build-executable
+build: build-libs build-executable
 
-clean: build-libs
+copy-libs: build-libs
+	sudo mv -v $(OSSLTRACE_BUILD_DIR)/lib/* $(OSSLTRACE_LIBS_PATH)
+
+install: build copy-libs clean
+
+clean: pre
 	rm -rfv $(OSSLTRACE_BUILD_DIR)/lib/
