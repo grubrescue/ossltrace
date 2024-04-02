@@ -19,4 +19,3 @@
     #pragma message "OSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH not defined. Defaults to /usr/lib/libossltrace_naivepatch.so"
     #define OSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH "/usr/lib/libossltrace_naivepatch.so"
 #endif
-// todo: ifdefы, чтобы можно было при билде настраивать

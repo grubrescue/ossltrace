@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-struct arguments {
+struct Arguments {
     enum { PRELOAD, AUDIT, NAIVEPATCH } mode;
     int  ignore_ca;
     char *output_file_path;
@@ -32,7 +32,7 @@ print_help(FILE *where, char *pathname) {
 
 int 
 main(int argc, char **argv) {
-    struct arguments arguments;
+    struct Arguments arguments;
     arguments.output_file_path = NULL; 
     arguments.child_argv = NULL; 
     arguments.denylist_file_path = NULL;

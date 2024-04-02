@@ -24,11 +24,14 @@ init_firewall() {
         return;
     }
 
+    firewall_initialized = 1; // todo лучше во внешнюю переменную перенести мб???
+    // а вообще вся инициализация в самом начале, перед mainом
+
     vector_init(&denylist_words);
 
     char *denylist_file_path = getenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);
     if (denylist_file_path == NULL) {
-        OSSLTRACE_LOG("%s", "filename not found in env vars; filter won't work");
+        OSSLTRACE_LOG("%s", "filter: filename not found in env vars; filter won't work\n");
         return;
     } 
 
@@ -66,8 +69,6 @@ init_firewall() {
     OSSLTRACE_LOG("\n! ! ! FORBIDDEN WORDS: \n")
     vector_foreach(&denylist_words, print_string);
     OSSLTRACE_LOG("! ! !\n")
-
-    firewall_initialized = 1;
 }
 
 char *
