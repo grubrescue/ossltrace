@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 struct Arguments {
-    enum { PRELOAD, AUDIT, NAIVEPATCH } mode;
+    enum { PRELOAD, AUDIT, NAIVEPATCH, CAPSTONE } mode;
     int  ignore_ca;
     char *output_file_path;
     char *denylist_file_path;
@@ -65,7 +65,9 @@ main(int argc, char **argv) {
                 } else if (!strcmp(optarg, "audit")) {
                     arguments.mode = AUDIT;
                 } else if (!strcmp(optarg, "naive_patch")) {
-                    arguments.mode = NAIVEPATCH;                    
+                    arguments.mode = NAIVEPATCH;     
+                } else if (!strcmp(optarg, "capstone")) {
+                    arguments.mode = CAPSTONE;                  
                 } else {
                     print_usage(stderr, argv[0]);
                 }
@@ -150,6 +152,14 @@ main(int argc, char **argv) {
                 naivepatch_lib_path = OSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH;
             }
             setenv("LD_PRELOAD", naivepatch_lib_path, 1);
+            break;
+
+        case CAPSTONE:
+            char *capstone_lib_path = getenv(OSSLTRACE_CAPSTONE_ENV_VAR);
+            if (capstone_lib_path == NULL) {
+                capstone_lib_path = OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH;
+            }
+            setenv("LD_PRELOAD", capstone_lib_path, 1);
             break;
             
         default:
