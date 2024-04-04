@@ -15,36 +15,67 @@
 
 #include <capstone/capstone.h>
 
+struct __attribute__((packed)) LJmp {
+    uint8_t jmp_qword_ptr_rip[6];
+    size_t addr;
+}; 
+
+struct PatchInfo {
+    int err;
+    size_t copyStart;
+    size_t copyEnd;
+};
+
+#define OSSLTRACE_MAX_INSTRUCTIONS_TO_DISASM 40 
+#define OSSLTRACE_LJMP_INSTR_SIZE sizeof(struct LJmp)
+
+#define JMP_QWORD_RIP(addr) \
+    (struct LJmp) {{0xff, 0x25, 0, 0, 0, 0}, ((size_t) addr)}
+
 __attribute__((constructor)) 
 void
 initialize_constructor() {
     ossl_initialize();
 }
 
-static void 
+static struct PatchInfo
 disassembler_print(void *fun) {
     csh handle;
     cs_insn *insn;
     size_t count;
 
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) {
-        return -1;
+        OSSLTRACE_LOG("some problem while initializing capstone")
+        return (struct PatchInfo) {.err = -1};
     }
 
-    count = cs_disasm(handle, fun, 100, 0x1000, 0, &insn);
-    OSSLTRACE_LOG("count is %d\n", count)
-    
+    count = cs_disasm(handle, fun, 100, 0x00, OSSLTRACE_MAX_INSTRUCTIONS_TO_DISASM, &insn);
     if (count <= 0) {
         OSSLTRACE_LOG("couldn't disassemble")
+        return (struct PatchInfo) {.err = -1};
     }
 
-    size_t j;
-    for (j = 0; j < count; j++) {
-        if (insn)
-        printf("0x%" PRIx64 ":\t%s\t\t%s   ::::   %d bytes\n", insn[j].address, insn[j].mnemonic, insn[j].op_str, insn[j].size);
+    size_t copyStart = 0;
+    size_t copyEnd = 0;
+
+    for (cs_insn *i = insn; i < insn + count; i++) {
+        // printf("0x%" PRIx64 ":\t%s\t\t%s   ::::   %d bytes\n", i->address, i->mnemonic, i->op_str, i->size);
+        if (i->id == X86_INS_ENDBR64) {
+            copyStart += i->size;
+            copyEnd += i->size;
+            continue;
+        }
+
+        copyEnd += i->size;
+        
+        if (copyEnd - copyStart >= OSSLTRACE_LJMP_INSTR_SIZE) {
+            break;
+        }
     }
 
     cs_free(insn, count);
+
+    return (struct PatchInfo) {.err = 0, .copyStart = copyStart, .copyEnd = copyEnd};
 }
 
 
@@ -61,52 +92,37 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     }
     void *orig_page = (void *) (((size_t) orig_ptr) & ~(PAGE_SIZE - 1));
 
-    // int err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE);
-    // if (err) {
-    //     perror("mprotect");
-    //     exit(66);
-    // }
+    int err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE);
+    if (err) {
+        perror("mprotect");
+        exit(66);
+    }
 
-    disassembler_print(orig_ptr);
+    struct PatchInfo patchInfo = disassembler_print(orig_ptr);
 
-    // typedef struct __attribute__((packed)) jumper {
-    //     uint8_t jmp_qword_ptr_rip[6];
-    //     size_t addr;
-    // } jumper; 
+    struct LJmp jmp_to_payload = JMP_QWORD_RIP(payload_ptr);
+    struct LJmp jmp_to_original = JMP_QWORD_RIP(((size_t) orig_ptr) + patchInfo.copyEnd);
 
-    // uint8_t endbr64[4] = {0xf3, 0x0f, 0x1e, 0xfa};
-    
-    // jumper jmp_to_payload = {
-    //     {0xff, 0x25, 0, 0, 0, 0}, (size_t) payload_ptr
-    // };
+    void *restored_orig_ptr = mmap(NULL, patchInfo.copyEnd + OSSLTRACE_LJMP_INSTR_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    memcpy(restored_orig_ptr, orig_ptr, patchInfo.copyEnd); 
+    memcpy(restored_orig_ptr + patchInfo.copyEnd, &jmp_to_original, OSSLTRACE_LJMP_INSTR_SIZE);
 
-    // jumper jmp_to_original = {
-    //     {0xff, 0x25, 0, 0, 0, 0}, ((size_t) orig_ptr) + 0x12
-    // };
+    memcpy(orig_ptr + patchInfo.copyStart, &jmp_to_payload, OSSLTRACE_LJMP_INSTR_SIZE);
 
-    // void *restored_orig_ptr = malloc(0x16 + sizeof(jmp_to_original));
-    // void *restored_orig_ptr = mmap(NULL, 0x16 + sizeof(jmp_to_original), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    // memcpy(restored_orig_ptr, orig_ptr, 0x16); 
-    // memcpy(restored_orig_ptr + 0x16, &jmp_to_original, sizeof(jmp_to_original));
+    err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
+    if (err) {
+        perror("mprotect");
+        exit(66);
+    }
 
-    // memcpy(orig_ptr + 0x04, &jmp_to_payload, sizeof(jmp_to_payload));
-    // memcpy(orig_ptr + 0x12, endbr64, sizeof(endbr64));
+    void *restored_orig_page = (void *) (((size_t) restored_orig_ptr) & ~(PAGE_SIZE - 1));
+    err = mprotect(restored_orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
+    if (err) {
+        perror("mprotect");
+        exit(66);
+    }
 
-    // err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
-    // if (err) {
-    //     perror("mprotect");
-    //     exit(66);
-    // }
-
-    // void *restored_orig_page = (void *) (((size_t) restored_orig_ptr) & ~(PAGE_SIZE - 1));
-    // err = mprotect(restored_orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
-    // if (err) {
-    //     perror("mprotect");
-    //     exit(66);
-    // }
-
-    // return restored_orig_ptr;
-    return NULL;
+    return restored_orig_ptr;
 }
 
 
