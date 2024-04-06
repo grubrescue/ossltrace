@@ -12,6 +12,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <link.h>
+#include <stdint.h>
 
 #include <capstone/capstone.h>
 
@@ -20,23 +21,19 @@ struct __attribute__((packed)) LJmp {
     size_t addr;
 }; 
 
-struct PatchInfo {
-    int err;
-    size_t copyStart;
-    size_t copyEnd;
-};
-
-#define OSSLTRACE_MAX_INSTRUCTIONS_TO_DISASM 40 
 #define OSSLTRACE_LJMP_INSTR_SIZE sizeof(struct LJmp)
-
-#define JMP_QWORD_RIP(addr) \
-    (struct LJmp) {{0xff, 0x25, 0, 0, 0, 0}, ((size_t) addr)}
 
 __attribute__((constructor)) 
 void
 initialize_constructor() {
     ossl_initialize();
 }
+
+struct PatchInfo {
+    int err;
+    size_t copyStart;
+    size_t copyEnd;
+};
 
 static struct PatchInfo
 disassembler_print(void *fun) {
@@ -49,7 +46,7 @@ disassembler_print(void *fun) {
         return (struct PatchInfo) {.err = -1};
     }
 
-    count = cs_disasm(handle, fun, 100, 0x00, OSSLTRACE_MAX_INSTRUCTIONS_TO_DISASM, &insn);
+    count = cs_disasm(handle, fun, 100, 0x00, OSSLTRACE_LJMP_INSTR_SIZE, &insn);
     if (count <= 0) {
         OSSLTRACE_LOG("couldn't disassemble")
         return (struct PatchInfo) {.err = -1};
@@ -73,6 +70,11 @@ disassembler_print(void *fun) {
         }
     }
 
+    if (copyEnd - copyStart < OSSLTRACE_LJMP_INSTR_SIZE) {
+        OSSLTRACE_LOG("not enough instructions to override")
+        return (struct PatchInfo) {.err = -1};
+    }
+
     cs_free(insn, count);
 
     return (struct PatchInfo) {.err = 0, .copyStart = copyStart, .copyEnd = copyEnd};
@@ -81,6 +83,9 @@ disassembler_print(void *fun) {
 
 static void *
 monkey_patch(void *orig_ptr, void *payload_ptr) {
+    #define OSSLTRACE_JMP_QWORD_PTR_RIP(addr) \
+        (void *) &((struct LJmp) {{0xff, 0x25, 0, 0, 0, 0}, ((size_t) addr)})
+
     static size_t PAGE_SIZE = -100500;
 
     if (PAGE_SIZE == -100500) {
@@ -90,6 +95,7 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
             exit(66);
         }
     }
+
     void *orig_page = (void *) (((size_t) orig_ptr) & ~(PAGE_SIZE - 1));
 
     int err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_WRITE);
@@ -100,14 +106,14 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
 
     struct PatchInfo patchInfo = disassembler_print(orig_ptr);
 
-    struct LJmp jmp_to_payload = JMP_QWORD_RIP(payload_ptr);
-    struct LJmp jmp_to_original = JMP_QWORD_RIP(((size_t) orig_ptr) + patchInfo.copyEnd);
+    void *jmp_to_payload = OSSLTRACE_JMP_QWORD_PTR_RIP(payload_ptr);
+    void *jmp_to_original = OSSLTRACE_JMP_QWORD_PTR_RIP(((size_t) orig_ptr) + patchInfo.copyEnd);
 
     void *restored_orig_ptr = mmap(NULL, patchInfo.copyEnd + OSSLTRACE_LJMP_INSTR_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     memcpy(restored_orig_ptr, orig_ptr, patchInfo.copyEnd); 
-    memcpy(restored_orig_ptr + patchInfo.copyEnd, &jmp_to_original, OSSLTRACE_LJMP_INSTR_SIZE);
+    memcpy(restored_orig_ptr + patchInfo.copyEnd, jmp_to_original, OSSLTRACE_LJMP_INSTR_SIZE);
 
-    memcpy(orig_ptr + patchInfo.copyStart, &jmp_to_payload, OSSLTRACE_LJMP_INSTR_SIZE);
+    memcpy(orig_ptr + patchInfo.copyStart, jmp_to_payload, OSSLTRACE_LJMP_INSTR_SIZE);
 
     err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
     if (err) {
@@ -123,7 +129,11 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     }
 
     return restored_orig_ptr;
+
+    #undef OSSLTRACE_JMP_QWORD_PTR_RIP
 }
+
+#undef OSSLTRACE_LJMP_INSTR_SIZE
 
 
 
