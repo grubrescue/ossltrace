@@ -65,7 +65,7 @@ init_firewall() {
     OSSLTRACE_LOG("! ! !\n")
 }
 
-static void  *is_buf_contains_buf;
+static const void *is_buf_contains_buf;
 static size_t is_buf_contains_num;
 
 int 

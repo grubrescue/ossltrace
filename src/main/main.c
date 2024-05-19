@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 struct Arguments {
-    enum { PRELOAD, AUDIT, NAIVEPATCH, CAPSTONE } mode;
+    enum { PRELOAD, AUDIT, CAPSTONE } mode;
     int  ignore_ca;
     char *output_file_path;
     char *denylist_file_path;
@@ -20,14 +20,14 @@ struct Arguments {
 
 
 void 
-print_usage(FILE *where, char *pathname) {
+print_usage(FILE *where, const char *pathname) {
     fprintf(where, "usage: %s [options] command [command args]\n", pathname);
     fprintf(where, "see list of options by typing %s -h/--help\n", pathname);
 }
 
 
 void 
-print_help(FILE *where, char *pathname) {
+print_help(FILE *where, const char *pathname) {
     print_usage(where, pathname);
     fprintf(stdout, "no help yet, sorry!\n\n");
 }
@@ -63,9 +63,7 @@ main(int argc, char **argv) {
                 if (!strcmp(optarg, "preload")) {
                     arguments.mode = PRELOAD;
                 } else if (!strcmp(optarg, "audit")) {
-                    arguments.mode = AUDIT;
-                } else if (!strcmp(optarg, "naive_patch")) {
-                    arguments.mode = NAIVEPATCH;     
+                    arguments.mode = AUDIT; 
                 } else if (!strcmp(optarg, "capstone")) {
                     arguments.mode = CAPSTONE;                  
                 } else {
@@ -135,6 +133,11 @@ main(int argc, char **argv) {
             if (preload_lib_path == NULL) {
                 preload_lib_path = OSSLTRACE_DEFAULT_PRELOAD_LIB_PATH;
             }
+
+            if (!access(preload_lib_path, X_OK)) {
+                perror(preload_lib_path);
+            }
+
             setenv("LD_PRELOAD", preload_lib_path, 1);
             break;
 
@@ -143,22 +146,31 @@ main(int argc, char **argv) {
             if (audit_lib_path == NULL) {
                 audit_lib_path = OSSLTRACE_DEFAULT_AUDIT_LIB_PATH;
             }
-            setenv("LD_AUDIT", audit_lib_path, 1);
-            break;
 
-        case NAIVEPATCH:
-            char *naivepatch_lib_path = getenv(OSSLTRACE_NAIVEPATCH_ENV_VAR);
-            if (naivepatch_lib_path == NULL) {
-                naivepatch_lib_path = OSSLTRACE_DEFAULT_NAIVEPATCH_LIB_PATH;
+            if (!access(audit_lib_path, X_OK)) {
+                perror(audit_lib_path);
             }
-            setenv("LD_PRELOAD", naivepatch_lib_path, 1);
+
+            setenv("LD_AUDIT", audit_lib_path, 1);
             break;
 
         case CAPSTONE:
             char *capstone_lib_path = getenv(OSSLTRACE_CAPSTONE_ENV_VAR);
             if (capstone_lib_path == NULL) {
+#ifdef OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH
                 capstone_lib_path = OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH;
+#else
+                fprintf(stderr, "As there was no Capstone instance available during installation, "
+                    "you have to specify the path to Capstone library explicitly"
+                    "using "OSSLTRACE_CAPSTONE_ENV_VAR" environment variable. Exiting now...");
+                return EXIT_FAILURE;
+#endif
             }
+
+            if (!access(capstone_lib_path, X_OK)) {
+                perror(capstone_lib_path);
+            }
+
             setenv("LD_PRELOAD", capstone_lib_path, 1);
             break;
             

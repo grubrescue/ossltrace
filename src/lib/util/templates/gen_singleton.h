@@ -1,18 +1,25 @@
 #pragma once
 
 #include "concat.h"
-#include <sys/types.h>
 
-#define GEN_FUNC_PTR_SINGLETON(FUNC_NAME) \
+#define FUNC_POSTFIX 102930128401
+
+#define ORIG_FUNC_PTR_STORAGE(FUNC_NAME) \
     volatile void ** \
-    CAT2(FUNC_NAME, singleton)() { \
-        volatile static void *FUNC_NAME = NULL; \
-        return &FUNC_NAME; \
+    CAT4(orig, FUNC_NAME, singleton, FUNC_POSTFIX)() { \
+        volatile static void *ptr = NULL; \
+        return &ptr; \
     }
 
-#define GET_FUNC_PTR(FUNC_NAME) \
-    (*(CAT2(FUNC_NAME, singleton)()))
 
-#define SET_FUNC_PTR(FUNC_NAME, PTR) \
-    volatile void **CAT2(FUNC_NAME, tmpvar) = CAT2(FUNC_NAME, singleton)();\
-    *CAT2(FUNC_NAME, tmpvar) = PTR
+#define _SINGLETON_CALL(FUNC_NAME) \
+    CAT4(orig, FUNC_NAME, singleton, FUNC_POSTFIX)()
+
+
+#define GET_ORIG_FUNC_PTR(FUNC_NAME) \
+    *(_SINGLETON_CALL(FUNC_NAME))
+
+
+#define SET_ORIG_FUNC_PTR(FUNC_NAME, PTR) \
+    volatile void **CAT3(orig, FUNC_NAME, FUNC_POSTFIX) = _SINGLETON_CALL(FUNC_NAME);\
+    *CAT3(orig, FUNC_NAME, FUNC_POSTFIX) = PTR
