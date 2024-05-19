@@ -15,6 +15,11 @@
 static vector denylist_strings;
 static volatile int initialized = 0;
 
+static void 
+print_string(const void *val) {
+    OSSLTRACE_LOG("%s\n", val)
+}
+
 static void
 init_firewall() {
     if (initialized) {
@@ -37,16 +42,15 @@ init_firewall() {
     }
 
     char buf[OSSLTRACE_MAX_DENYLIST_WORD_LEN] = {};
-    char *res;
-    while ((res = fgets(buf, OSSLTRACE_MAX_DENYLIST_WORD_LEN, denylist_file)) != NULL) {    
-        res = strdup(res);
-        if (res != NULL) {
-
-            int last_idx = strlen(res) - 1;
-            if (res[last_idx] == '\n') {
-                res[last_idx] = 0;    
+    char *line;
+    while ((line = fgets(buf, OSSLTRACE_MAX_DENYLIST_WORD_LEN, denylist_file)) != NULL) {    
+        line = strdup(line);
+        if (line != NULL) {
+            int last_idx = strlen(line) - 1;
+            if (line[last_idx] == '\n') {
+                line[last_idx] = 0;    
             }
-            vector_push(&denylist_strings, res);
+            vector_push(&denylist_strings, line);
         } else {
             break;
         }         
@@ -56,22 +60,22 @@ init_firewall() {
         perror("fclose");
     }
 
-    void 
-    print_string(const void *val) {
-        OSSLTRACE_LOG("%s\n", val)
-    }
-
     OSSLTRACE_LOG("\n! ! ! FORBIDDEN STRINGS: \n")
     vector_foreach(&denylist_strings, print_string);
     OSSLTRACE_LOG("! ! !\n")
 }
 
-char *
-find_denylisted_strings_occurence(const void *buf, int num) {
-    int 
-    is_buf_contains(const void *needle) {
-        return memmem(buf, num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
-    }
+static void  *is_buf_contains_buf;
+static size_t is_buf_contains_num;
 
+int 
+is_buf_contains(const void *needle) {
+    return memmem(is_buf_contains_buf, is_buf_contains_num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
+}
+
+char *
+find_denylisted_strings_occurence(const void *buf, size_t num) {
+    is_buf_contains_buf = buf;
+    is_buf_contains_num = num;
     return (char *) vector_findfirst(&denylist_strings, is_buf_contains); 
 }

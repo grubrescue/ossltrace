@@ -14,8 +14,8 @@ typedef struct vector{
 } vector;
 
 
-// methods
-// nulls NOT supposed.
+// Declarations
+// Nulls NOT supposed.
 void vector_init(vector *vec);
 void vector_init_cap(vector *vec, size_t cap);
 void *vector_push(vector *vec, void *value);
@@ -27,7 +27,8 @@ void *vector_findfirst(vector *vec, int (*callback_predicate)(const void *item))
 void vector_destroy(vector *vec);
 
 
-// implementation
+// Definitions
+
 static void vector_ensure_size(vector *vec) {
     if (vec->size == vec->cap) {
         vec->cap = vec->cap * 3 / 2 + 1;
