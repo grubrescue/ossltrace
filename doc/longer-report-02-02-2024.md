@@ -87,7 +87,7 @@ la_objopen(obj) {
 la_symbindXX(sym) {
     if (sym->symname == 'SSL_write')
         orig_SSL_write = sym->st_value
-        return hooked_SSL_write
+        return payloaded_SSL_write
     else if (...) 
         ...
 }
@@ -119,7 +119,7 @@ SSL_write + 0x.. | ...
 # SSL_write с прыжком в хук
 
 SSL_write + 0x00 | endbr64
-SSL_write + 0x04 | jmp QWORD PTR hooked_fun+0x00
+SSL_write + 0x04 | jmp QWORD PTR payloaded_fun+0x00
 ...
 SSL_write + 0x16 | test edx, edx
 SSL_write + 0x.. | ...

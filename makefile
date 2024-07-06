@@ -13,7 +13,6 @@ runner_cflags = \
     -DOSSLTRACE_DEFAULT_PRELOAD_LIB_PATH='"${libs_path}${preload_lib_name}"' \
     -DOSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH='"${libs_path}${capstone_lib_name}"'
 
-
 openssl_found := $(shell pkg-config --exists openssl && echo yes || echo no)
 ifeq ($(openssl_found),yes)
     $(info OpenSSL library ok...)
@@ -21,7 +20,7 @@ else
     $(error OpenSSL is not installed; find a package like libssl-dev)
 endif
 
-capstone_found := $(shell pkg-config --exists capmstone && echo yes || echo no)
+capstone_found := $(shell pkg-config --exists capstone && echo yes || echo no)
 ifeq ($(capstone_found),yes)
     $(info Capstone ok; building with Capstone disassembly framework...)
     runner_cflags += \

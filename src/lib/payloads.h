@@ -5,7 +5,7 @@
 #include "firewall.h"
 #include "logger.h"
 #include "util/vector.h"
-#include "util/templates/gen_hook.h"
+#include "util/templates/gen_payload.h"
 
 #include <openssl/ssl.h>
 
@@ -21,7 +21,7 @@
 #include <fcntl.h>
 
 
-DEF_HOOK(int, SSL_write, SSL *ssl, const void *buf, int num) {
+DEF_PAYLOAD(int, SSL_write, SSL *ssl, const void *buf, int num) {
     OSSLTRACE_LOG("\n*** SSL_write intercepted\nintermediate buffer size is %d, contents: \n\n", num)
     OSSLTRACE_LOG_BUF(buf, num)
     OSSLTRACE_LOG("\n")
@@ -40,7 +40,7 @@ DEF_HOOK(int, SSL_write, SSL *ssl, const void *buf, int num) {
 }
 
 
-DEF_HOOK(int, SSL_read, SSL *ssl, void *buf, int num) {
+DEF_PAYLOAD(int, SSL_read, SSL *ssl, void *buf, int num) {
     OSSLTRACE_LOG("\n*** SSL_read intercepted\n")
 
     int retval = INVOKE_ORIGINAL(SSL_read, ssl, buf, num);
@@ -72,7 +72,7 @@ init_ca_ignore_mode() {
     is_ca_ignored = ca_env != NULL ? 1 : 0;
 }
 
-DEF_HOOK(long, SSL_get_verify_result, const SSL *ssl) {
+DEF_PAYLOAD(long, SSL_get_verify_result, const SSL *ssl) {
     if (is_ca_ignored == -1) {
         init_ca_ignore_mode();
     }
@@ -90,7 +90,7 @@ DEF_HOOK(long, SSL_get_verify_result, const SSL *ssl) {
 }
 
 
-DEF_HOOK(void, SSL_CTX_set_verify, SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
+DEF_PAYLOAD(void, SSL_CTX_set_verify, SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
     OSSLTRACE_LOG("\n*** SSL_CTX_set_verify intercepted\n")
     if (is_ca_ignored) {
         OSSLTRACE_LOG("setting SSL_VERIFY_NONE");

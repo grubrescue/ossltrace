@@ -135,8 +135,9 @@ main(int argc, char **argv) {
                 preload_lib_path = OSSLTRACE_DEFAULT_PRELOAD_LIB_PATH;
             }
 
-            if (!access(preload_lib_path, X_OK)) {
+            if (access(preload_lib_path, X_OK) == -1) {
                 perror(preload_lib_path);
+                exit(EXIT_FAILURE);
             }
 
             setenv("LD_PRELOAD", preload_lib_path, 1);
@@ -148,8 +149,9 @@ main(int argc, char **argv) {
                 audit_lib_path = OSSLTRACE_DEFAULT_AUDIT_LIB_PATH;
             }
 
-            if (!access(audit_lib_path, X_OK)) {
+            if (access(audit_lib_path, X_OK) == -1) {
                 perror(audit_lib_path);
+                exit(EXIT_FAILURE);
             }
 
             setenv("LD_AUDIT", audit_lib_path, 1);
@@ -171,8 +173,9 @@ main(int argc, char **argv) {
 #endif
             }
 
-            if (!access(capstone_lib_path, X_OK)) {
+            if (access(capstone_lib_path, X_OK) == -1) {
                 perror(capstone_lib_path);
+                exit(EXIT_FAILURE);
             }
 
             setenv("LD_PRELOAD", capstone_lib_path, 1);

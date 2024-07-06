@@ -1,7 +1,7 @@
 #pragma once
 
 #include "concat.h"
-#include "gen_hook.h"
+#include "gen_payload.h"
 
 #include <link.h>
 #include <stdio.h>
@@ -31,20 +31,20 @@
     }
 
 
-#define AUDIT_HOOKS \
+#define AUDIT_PAYLOADS \
     uintptr_t \
     la_symbind64(Elf64_Sym *sym, unsigned int ndx, uintptr_t *refcook, \
             uintptr_t *defcook, unsigned int *flags, const char *symname)
 
 
-#define AUDIT_HOOK_SYMBOL(ORIG_SYM) \
+#define AUDIT_PAYLOAD_SYMBOL(ORIG_SYM) \
     if (!strcmp(symname, #ORIG_SYM)) { \
         if (GET_ORIGINAL(ORIG_SYM) == NULL) { \
             SET_ORIGINAL(ORIG_SYM, (void *) sym->st_value); \
         } \
-        return (uintptr_t) GET_HOOK(ORIG_SYM); \
+        return (uintptr_t) GET_PAYLOAD(ORIG_SYM); \
     }
 
 
-#define AUDIT_HOOK_DEFAULT() \
+#define AUDIT_PAYLOAD_DEFAULT() \
     return sym->st_value;
