@@ -10,7 +10,9 @@ libs_path = /usr/lib/
 cc = gcc
 runner_cflags = \
     -DOSSLTRACE_DEFAULT_AUDIT_LIB_PATH='"${libs_path}${audit_lib_name}"'  \
-    -DOSSLTRACE_DEFAULT_PRELOAD_LIB_PATH='"${libs_path}${preload_lib_name}"'
+    -DOSSLTRACE_DEFAULT_PRELOAD_LIB_PATH='"${libs_path}${preload_lib_name}"' \
+    -DOSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH='"${libs_path}${capstone_lib_name}"'
+
 
 openssl_found := $(shell pkg-config --exists openssl && echo yes || echo no)
 ifeq ($(openssl_found),yes)
@@ -23,13 +25,13 @@ capstone_found := $(shell pkg-config --exists capmstone && echo yes || echo no)
 ifeq ($(capstone_found),yes)
     $(info Capstone ok; building with Capstone disassembly framework...)
     runner_cflags += \
-        -DOSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH='"${libs_path}${capstone_lib_name}"'
+	-DOSSLTRACE_USE_CAPSTONE=1
 else
     $(warning Capstone is not installed; corresponding functionality won't be available)
 endif
 
 
-all: clean install # todo может не то?
+all: clean install
 
 prepare:
 	mkdir -p ${build_dir}

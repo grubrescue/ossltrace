@@ -16,5 +16,5 @@
 
 #define OSSLTRACE_CAPSTONE_ENV_VAR "OSSLTRACE_CAPSTONE_LIB_PATH"
 #ifndef OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH
-    #pragma message ""
+    #pragma message "If you want to "
 #endif

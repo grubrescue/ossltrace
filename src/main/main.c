@@ -10,13 +10,13 @@
 #include <assert.h>
 #include <stdlib.h>
 
-struct Arguments {
+typedef struct {
     enum { PRELOAD, AUDIT, CAPSTONE } mode;
     int  ignore_ca;
     char *output_file_path;
     char *denylist_file_path;
     char **child_argv;
-};
+} arguments;
 
 
 void 
@@ -35,7 +35,7 @@ print_help(FILE *where, const char *pathname) {
 
 int 
 main(int argc, char **argv) {
-    struct Arguments arguments;
+    arguments arguments;
     arguments.output_file_path = NULL; 
     arguments.child_argv = NULL; 
     arguments.denylist_file_path = NULL;
@@ -68,6 +68,7 @@ main(int argc, char **argv) {
                     arguments.mode = CAPSTONE;                  
                 } else {
                     print_usage(stderr, argv[0]);
+                    exit(EXIT_FAILURE);
                 }
                 break;
             case 'o':
@@ -157,12 +158,15 @@ main(int argc, char **argv) {
         case CAPSTONE:
             char *capstone_lib_path = getenv(OSSLTRACE_CAPSTONE_ENV_VAR);
             if (capstone_lib_path == NULL) {
-#ifdef OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH
                 capstone_lib_path = OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH;
-#else
-                fprintf(stderr, "As there was no Capstone instance available during installation, "
-                    "you have to specify the path to Capstone library explicitly"
-                    "using "OSSLTRACE_CAPSTONE_ENV_VAR" environment variable. Exiting now...");
+
+#ifndef OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH
+                fprintf(stderr, "WARNING: As there was no Capstone instance "
+                                "available during installation, you may have "
+                                "to specify the path to Capstone library explicitly.\n"
+                                "If error occurs, try setting the "
+                                OSSLTRACE_CAPSTONE_ENV_VAR
+                                " environment variable. ");
                 return EXIT_FAILURE;
 #endif
             }
