@@ -17,7 +17,7 @@ static volatile int initialized = 0;
 
 static void 
 print_string(const void *val) {
-    OSSLTRACE_LOG("%s\n", val)
+    OSSLTRACE_LOG("%s\n", (const char *) val)
 }
 
 static void
@@ -68,7 +68,7 @@ init_firewall() {
 static const void *is_buf_contains_buf;
 static size_t is_buf_contains_num;
 
-int 
+static int 
 is_buf_contains(const void *needle) {
     return memmem(is_buf_contains_buf, is_buf_contains_num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
 }

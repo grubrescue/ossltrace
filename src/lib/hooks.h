@@ -5,7 +5,7 @@
 #include "firewall.h"
 #include "logger.h"
 #include "util/vector.h"
-#include "util/templates/gen_singleton.h"
+#include "util/templates/gen_hook.h"
 
 #include <openssl/ssl.h>
 
@@ -21,13 +21,7 @@
 #include <fcntl.h>
 
 
-ORIG_FUNC_PTR_STORAGE(SSL_write);
-
-int 
-hooked_SSL_write(SSL *ssl, const void *buf, int num) {
-    typedef int 
-    (*SSL_write_callback) (SSL *, const void *, int);
-
+DEF_HOOK(int, SSL_write, SSL *ssl, const void *buf, int num) {
     OSSLTRACE_LOG("\n*** SSL_write intercepted\nintermediate buffer size is %d, contents: \n\n", num)
     OSSLTRACE_LOG_BUF(buf, num)
     OSSLTRACE_LOG("\n")
@@ -38,7 +32,7 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
         OSSLTRACE_LOG("\n!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
         retval = -1;
     } else {
-        retval = ((SSL_write_callback) GET_ORIG_FUNC_PTR(SSL_write))(ssl, buf, num);
+        retval = INVOKE_ORIGINAL(SSL_write, ssl, buf, num);
     }
 
     OSSLTRACE_LOG("return value is %d\n***\n\n", retval)
@@ -46,17 +40,10 @@ hooked_SSL_write(SSL *ssl, const void *buf, int num) {
 }
 
 
-
-ORIG_FUNC_PTR_STORAGE(SSL_read);
-
-int 
-hooked_SSL_read(SSL *ssl, void *buf, int num) {
-    typedef int 
-    (*SSL_read_callback) (SSL *, void *, int);
-
+DEF_HOOK(int, SSL_read, SSL *ssl, void *buf, int num) {
     OSSLTRACE_LOG("\n*** SSL_read intercepted\n")
 
-    int retval = ((SSL_read_callback) GET_ORIG_FUNC_PTR(SSL_read))(ssl, buf, num);
+    int retval = INVOKE_ORIGINAL(SSL_read, ssl, buf, num);
     if (retval == -1) {
         OSSLTRACE_LOG("retval is -1, no buffer, sorry")
     } else {
@@ -77,9 +64,6 @@ hooked_SSL_read(SSL *ssl, void *buf, int num) {
 }
 
 
-
-ORIG_FUNC_PTR_STORAGE(SSL_get_verify_result);
-
 static volatile int is_ca_ignored = -1;
 
 static void
@@ -88,18 +72,14 @@ init_ca_ignore_mode() {
     is_ca_ignored = ca_env != NULL ? 1 : 0;
 }
 
-long 
-hooked_SSL_get_verify_result(const SSL *ssl) {
-    typedef long 
-    (*SSL_get_verify_result_callback) (const SSL *);
-
+DEF_HOOK(long, SSL_get_verify_result, const SSL *ssl) {
     if (is_ca_ignored == -1) {
         init_ca_ignore_mode();
     }
 
     OSSLTRACE_LOG("\n*** SSL_get_verify_result intercepted\n")
 
-    long res = ((SSL_get_verify_result_callback) GET_ORIG_FUNC_PTR(SSL_get_verify_result))(ssl);
+    long res = INVOKE_ORIGINAL(SSL_get_verify_result, ssl);
     if (is_ca_ignored) {
         OSSLTRACE_LOG("retval is %ld, though we'll return 0\n***\n", res)
         return 0;    
@@ -107,25 +87,17 @@ hooked_SSL_get_verify_result(const SSL *ssl) {
         OSSLTRACE_LOG("retval is %ld, thus returning %ld\n***\n", res, res)
         return res;
     }
-
 }
 
 
-
-ORIG_FUNC_PTR_STORAGE(SSL_CTX_set_verify);
-
-void 
-hooked_SSL_CTX_set_verify(SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
-    typedef void 
-    (*SSL_CTX_set_verify_callback) (SSL_CTX *, int, SSL_verify_cb);
-
+DEF_HOOK(void, SSL_CTX_set_verify, SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
     OSSLTRACE_LOG("\n*** SSL_CTX_set_verify intercepted\n")
     if (is_ca_ignored) {
         OSSLTRACE_LOG("setting SSL_VERIFY_NONE");
-        ((SSL_CTX_set_verify_callback) GET_ORIG_FUNC_PTR(SSL_CTX_set_verify))(ctx, SSL_VERIFY_NONE, NULL);
+        INVOKE_ORIGINAL(SSL_CTX_set_verify, ctx, SSL_VERIFY_NONE, NULL);
     } else {
         OSSLTRACE_LOG("calling with no changes")
-        ((SSL_CTX_set_verify_callback) GET_ORIG_FUNC_PTR(SSL_CTX_set_verify))(ctx, mode, verify);
+        INVOKE_ORIGINAL(SSL_CTX_set_verify, ctx, mode, verify);
     }
 
     OSSLTRACE_LOG("\n***\n")

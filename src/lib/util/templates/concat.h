@@ -5,3 +5,4 @@
 #define CAT2(a, b) TCAT2(a, b)
 #define CAT3(a, b, c) CAT2(CAT2(a, b), c)
 #define CAT4(a, b, c, d) CAT2(CAT3(a, b, c), d)
+#define CAT5(a, b, c, d, e) CAT2(CAT4(a, b, c, d), e)

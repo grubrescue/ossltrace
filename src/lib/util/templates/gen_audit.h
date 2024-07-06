@@ -1,25 +1,26 @@
 #pragma once
 
 #include "concat.h"
-#include "gen_singleton.h"
+#include "gen_hook.h"
 
 #include <link.h>
 #include <stdio.h>
 
-#define TEMPLATE_AUDIT_HEADER() \
+
+#define AUDIT_HEADER() \
     unsigned int \
     la_version(unsigned int version) { \
         return LAV_CURRENT; \
     }
 
 
-#define TEMPLATE_AUDIT_CONSTRUCTOR(CONSTRUCTOR_FUNC, ...) \
+#define AUDIT_CONSTRUCTOR(CONSTRUCTOR_FUNC, ...) \
     void la_preinit(uintptr_t *cookie) { \
         CONSTRUCTOR_FUNC(__VA_ARGS__); \
     }
 
 
-#define TEMPLATE_AUDIT_LIB(LIB_NAME) \
+#define AUDIT_LIB(LIB_NAME) \
     unsigned int \
     la_objopen(struct link_map *map, Lmid_t lmid, uintptr_t *cookie) { \
         if (strstr(map->l_name, #LIB_NAME) != NULL) { \
@@ -29,18 +30,21 @@
         } \
     }
 
-#define TEMPLATE_AUDIT_SYMBOLS \
+
+#define AUDIT_HOOKS \
     uintptr_t \
     la_symbind64(Elf64_Sym *sym, unsigned int ndx, uintptr_t *refcook, \
             uintptr_t *defcook, unsigned int *flags, const char *symname)
 
-#define TEMPLATE_AUDIT_SYMBOLS_ADD(HOOKED_SYM, ORIG_SYM) \
+
+#define AUDIT_HOOK_SYMBOL(ORIG_SYM) \
     if (!strcmp(symname, #ORIG_SYM)) { \
-        if (GET_ORIG_FUNC_PTR(ORIG_SYM) == NULL) { \
-            SET_ORIG_FUNC_PTR(ORIG_SYM, (void *) sym->st_value); \
+        if (GET_ORIGINAL(ORIG_SYM) == NULL) { \
+            SET_ORIGINAL(ORIG_SYM, (void *) sym->st_value); \
         } \
-        return (uintptr_t) HOOKED_SYM; \
+        return (uintptr_t) GET_HOOK(ORIG_SYM); \
     }
 
-#define TEMPLATE_AUDIT_SYMBOLS_DEFAULT() \
+
+#define AUDIT_HOOK_DEFAULT() \
     return sym->st_value;

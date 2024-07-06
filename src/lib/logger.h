@@ -43,7 +43,7 @@ init_log() {
 
 
 #define OSSLTRACE_LOG(...) \
-    if (log_fd == -1) { init_log(); } \
+    if (log_file == NULL) { init_log(); } \
     fprintf(log_file, __VA_ARGS__); \
     fflush(log_file);
 
