@@ -162,14 +162,13 @@ main(int argc, char **argv) {
             if (capstone_lib_path == NULL) {
                 capstone_lib_path = OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH;
 
-#ifndef OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH
+#ifndef OSSLTRACE_USE_CAPSTONE
                 fprintf(stderr, "WARNING: As there was no Capstone instance "
                                 "available during installation, you may have "
-                                "to specify the path to Capstone library explicitly.\n"
-                                "If error occurs, try setting the "
+                                "to specify the path to Capstone-based ossltrace library "
+                                "explicitly.\nIf error occurs, try setting the "
                                 OSSLTRACE_CAPSTONE_ENV_VAR
                                 " environment variable. ");
-                return EXIT_FAILURE;
 #endif
             }
 
