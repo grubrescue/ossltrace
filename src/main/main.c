@@ -168,7 +168,7 @@ main(int argc, char **argv) {
                                 "to specify the path to Capstone-based ossltrace library "
                                 "explicitly.\nIf error occurs, try setting the "
                                 OSSLTRACE_CAPSTONE_ENV_VAR
-                                " environment variable. ");
+                                " ENV_VARironment variable. ");
 #endif
             }
 

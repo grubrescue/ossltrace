@@ -2,23 +2,21 @@
 
 #define _GNU_SOURCE
 
-#include "util/vector.h"
+#include "util/list.h"
 #include "logger.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdarg.h>
 
 #define OSSLTRACE_MAX_DENYLIST_WORD_LEN 2048
 
-static vector denylist_strings;
+
+static strlist *deny_strs = NULL;
 static volatile int initialized = 0;
 
-static void 
-print_string(const void *val) {
-    OSSLTRACE_LOG("%s\n", (const char *) val)
-}
 
 static void
 init_firewall() {
@@ -27,21 +25,23 @@ init_firewall() {
         return;
     }
 
-    vector_init(&denylist_strings);
+    deny_strs = strlist_create();
 
     char *denylist_file_path = getenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);
     if (denylist_file_path == NULL) {
-        OSSLTRACE_LOG("filter: filename not found in env vars; filter won't work\n");
+        OSSLTRACE_LOG("firewall: filename not found in " 
+            OSSLTRACE_DENYLIST_FILE_ENV_VAR "; denylist is empty\n");
         return;
     } 
 
     FILE *denylist_file = fopen(denylist_file_path, "r");
     if (denylist_file == NULL) {
         perror("fopen");
+        OSSLTRACE_LOG("firewall: couldn't initialize")
         return;
     }
 
-    char buf[OSSLTRACE_MAX_DENYLIST_WORD_LEN] = {};
+    char buf[OSSLTRACE_MAX_DENYLIST_WORD_LEN];
     char *line;
     while ((line = fgets(buf, OSSLTRACE_MAX_DENYLIST_WORD_LEN, denylist_file)) != NULL) {    
         line = strdup(line);
@@ -50,32 +50,39 @@ init_firewall() {
             if (line[last_idx] == '\n') {
                 line[last_idx] = 0;    
             }
-            vector_push(&denylist_strings, line);
+            strlist_add(deny_strs, line);
         } else {
-            break;
+            perror("strdup");
+            exit(EXIT_FAILURE);
         }         
     }
 
     if (fclose(denylist_file)) {                                                         
         perror("fclose");
+        exit(EXIT_FAILURE);
     }
 
-    OSSLTRACE_LOG("\n! ! ! FORBIDDEN STRINGS: \n")
-    vector_foreach(&denylist_strings, print_string);
-    OSSLTRACE_LOG("! ! !\n")
+    OSSLTRACE_LOG("\n! ! ! FORBIDDEN STRINGS: \n%s\n", strlist_repr(deny_strs, '\n'));
 }
 
-static const void *is_buf_contains_buf;
-static size_t is_buf_contains_num;
 
-static int 
-is_buf_contains(const void *needle) {
-    return memmem(is_buf_contains_buf, is_buf_contains_num, needle, strlen((const char *) needle)) != NULL ? 1 : 0; // va_args?
+// Public.
+char *
+firewall_match_in_buf(const void *buf, size_t buf_n) {
+    return strlist_find_any_in_buf(deny_strs, buf, buf_n);
 }
 
 char *
-find_denylisted_strings_occurence(const void *buf, size_t num) {
-    is_buf_contains_buf = buf;
-    is_buf_contains_num = num;
-    return (char *) vector_findfirst(&denylist_strings, is_buf_contains); 
+firewall_get_all_strings() {
+    return strlist_repr(deny_strs, '\n');
+}
+
+void
+firewall_add_str(char *str) {
+    strlist_add(deny_strs, str);
+}
+
+int
+firewall_remove_str(char *str) {
+    return strlist_remove(deny_strs, str);
 }
