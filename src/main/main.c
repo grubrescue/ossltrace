@@ -10,9 +10,11 @@
 #include <assert.h>
 #include <stdlib.h>
 
+
 typedef struct {
     enum { PRELOAD, AUDIT, CAPSTONE } mode;
     int  ignore_ca;
+    int  conf_server;
     char *output_file_path;
     char *denylist_file_path;
     char **child_argv;
@@ -47,13 +49,14 @@ main(int argc, char **argv) {
         int option_index = 0;
 
         static struct option long_options[] = {
-            { "mode",      required_argument, NULL, 'm' },
-            { "output",    required_argument, NULL, 'o' },
-            { "quiet",     no_argument,       NULL, 'q' },
-            { "denylist",  required_argument, NULL, 'd' },
-            { "help",      no_argument,       NULL, 'h' },
-            { "ignore-ca", no_argument,       NULL, 'i' },
-            { NULL,        0,                 NULL,  0  }
+            { "mode",       required_argument, NULL, 'm' },
+            { "output",     required_argument, NULL, 'o' },
+            { "quiet",      no_argument,       NULL, 'q' },
+            { "denylist",   required_argument, NULL, 'd' },
+            { "help",       no_argument,       NULL, 'h' },
+            { "ignore-ca",  no_argument,       NULL, 'i' },
+            { "confserver", no_argument,       NULL, 's' },
+            { NULL,         0,                 NULL,  0  }
         };
 
         int c = getopt_long(argc, argv, "+m:o:qd:hi", long_options, &option_index);
@@ -86,6 +89,9 @@ main(int argc, char **argv) {
                 break;
             case 'i':
                 arguments.ignore_ca = 1;
+                break;
+            case 's':
+                arguments.conf_server = 1;
                 break;
             case '?':
                 print_usage(stderr, argv[0]);
@@ -128,6 +134,12 @@ main(int argc, char **argv) {
         unsetenv(OSSLTRACE_IGNORE_CA_ENV_VAR);
     }
 
+    if (arguments.conf_server) {
+        setenv(OSSLTRACE_ENABLE_CONF_SERVER_ENV_VAR, "1", 1);
+    } else {
+        unsetenv(OSSLTRACE_ENABLE_CONF_SERVER_ENV_VAR);
+    }
+
     switch(arguments.mode) {
         case PRELOAD:
             char *preload_lib_path = getenv(OSSLTRACE_PRELOAD_ENV_VAR);
@@ -168,7 +180,7 @@ main(int argc, char **argv) {
                                 "to specify the path to Capstone-based ossltrace library "
                                 "explicitly.\nIf error occurs, try setting the "
                                 OSSLTRACE_CAPSTONE_ENV_VAR
-                                " ENV_VARironment variable. ");
+                                " environment variable. ");
 #endif
             }
 

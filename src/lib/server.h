@@ -1,4 +1,7 @@
+#pragma once
+
 #include "logger.h"
+#include "firewall.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,13 +12,13 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 
-
-// #define SOCKET_PATH "/tmp/parasite.sock"
+#define SOCKET_PATH_PREFIX "/tmp/parasite.sock." // todo multiple
 #define MAX_EVENTS 8
 #define BUFFER_SIZE 1024
 
-enum Command {
+enum command {
     ADD_STRING = 0x0000,
     REMOVE_STRING = 0x0001,
     GET_STRINGS = 0x0002
@@ -35,12 +38,15 @@ static void *server_thread(void *) {
         perror("socket");
         exit(EXIT_FAILURE);
     }
+    
+    char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX)+12); // should be enough
+    snprintf(socket_path, strlen(SOCKET_PATH_PREFIX)+12, "%s%d", SOCKET_PATH_PREFIX, getpid());
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 
-    unlink(SOCKET_PATH);
+    unlink(socket_path);
     if (bind(server_fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1) {
         perror("bind");
         close(server_fd);
@@ -99,54 +105,59 @@ static void *server_thread(void *) {
 
     close(server_fd);
     close(epoll_fd);
-    unlink(SOCKET_PATH);
+    unlink(socket_path);
     return NULL;
 }
 
 static void handle_client(int client_fd) {
-    unsigned short command;
+    uint16_t command;
     char buffer[BUFFER_SIZE];
     ssize_t num_bytes;
 
-    num_bytes = read(client_fd, &command, sizeof(command));
-    if (num_bytes <= 0) {
-        if (num_bytes == -1) perror("read");
+    num_bytes = read(client_fd, &buffer, sizeof(buffer));
+    if (num_bytes < 2) {
+        if (num_bytes == -1) {
+            perror("read");
+        }
         close(client_fd);
         return;
     }
 
-    command = ntohs(command);
-
-    num_bytes = read(client_fd, buffer, sizeof(buffer) - 1);
-    if (num_bytes <= 0) {
-        if (num_bytes == -1) perror("read");
-        close(client_fd);
-        return;
-    }
-
+    command = ntohs(*((uint16_t *)buffer));
     buffer[num_bytes] = '\0';
-    handle_command(client_fd, command, buffer);
+
+    handle_command(client_fd, command, buffer + 2);
 }
 
+// todo error checking
 static void handle_command(int client_fd, unsigned short command, const char *data) {
     switch (command) {
         case ADD_STRING:
-            add_string(data);
+            firewall_add_str(data);
             break;
         case REMOVE_STRING:
-            remove_string(data);
+            firewall_remove_str(data);
             break;
-        case GET_STRINGS: {
-            char *strings = get_strings();
-            write(client_fd, strings, strlen(strings));
-            free(strings);
+        case GET_STRINGS:
+            const char *strings = firewall_get_all_strings();
+            if (strlen(strings) == 0) {
+                strings = "<empty>";
+            }
+            ssize_t bytes_written = write(client_fd, strings, strlen(strings));
+            if (bytes_written < 1) {
+                perror("write");
+            }
             break;
-        }
         default:
             OSSLTRACE_LOG("parasite: unknown command: %hu\n", command);
     }
 }
 
 void run_parasite_server() {
-
+    pthread_t thread;
+    int status = pthread_create(&thread, NULL, server_thread, NULL);
+    if (status != 0) {
+        perror("pthread_create");
+        exit(EXIT_FAILURE);
+    }
 }

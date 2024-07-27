@@ -26,7 +26,7 @@ DEF_PAYLOAD(int, SSL_write, SSL *ssl, const void *buf, int num) {
     OSSLTRACE_LOG("\n")
 
     int retval;
-    char *occurence = firewall_match_in_buf(buf, num);
+    const char *occurence = firewall_match_in_buf(buf, num);
     if (occurence != NULL) {
         OSSLTRACE_LOG("\n!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
         retval = -1;
@@ -50,7 +50,7 @@ DEF_PAYLOAD(int, SSL_read, SSL *ssl, void *buf, int num) {
         OSSLTRACE_LOG_BUF(buf, retval)
         OSSLTRACE_LOG("\n")
 
-        char *occurence = firewall_match_in_buf(buf, retval);
+        const char *occurence = firewall_match_in_buf(buf, retval);
         if (occurence != NULL) {
             OSSLTRACE_LOG("!!! FOUND %s, PACKET REFUSED !!!\n", occurence)
             retval = -1;

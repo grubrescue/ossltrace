@@ -12,11 +12,10 @@ typedef struct strlist_node {
     char *data;
     size_t len;
     struct strlist_node *next;
+    struct strlist_node *prev;
 } strlist_node;
 
-typedef struct {
-    strlist_node *head;
-} strlist;
+typedef strlist_node strlist;
 
 
 strlist *
@@ -31,10 +30,10 @@ strlist_add(strlist *list, const char *str);
 int
 strlist_remove(strlist *list, const char *str);
 
-char *
+const char *
 strlist_repr(strlist *list, char sep);
 
-char *
+const char *
 strlist_find_any_in_buf(strlist *list, const void *buf, size_t buf_n);
 
 
@@ -47,15 +46,20 @@ strlist_create() {
         perror("malloc");
         exit(EXIT_FAILURE);
     }
-    list->head = NULL;
+
+    list->data = NULL;
+    list->len = 0;
+    list->prev = list;
+    list->next = list;
+
     return list;
 }
 
 
 void
 strlist_destroy(strlist *list) {
-    strlist_node *curr = list->head;
-    while (curr) {
+    strlist_node *curr = list->next;
+    while (curr != list) {
         strlist_node *next = curr->next;
         free(curr->data);
         free(curr);
@@ -72,38 +76,48 @@ strlist_add(strlist *list, const char *str) {
         perror("malloc");
         exit(EXIT_FAILURE);
     }
+
     new_node->len = strlen(str);
     new_node->data = strdup(str);
-    new_node->next = list->head;
-    list->head = new_node;
+
+    new_node->next = list;
+    new_node->prev = list->prev;
+    list->prev->next = new_node;
+    list->prev = new_node;
 }
 
 
 int
 strlist_remove(strlist *list, const char *str) {
-    strlist_node *curr = list->head;
     int removed_count = 0;
-    while (curr) {
+    strlist_node *curr = list->next;
+    while (curr != list) {
         if (strcmp(curr->data, str) == 0) {
+            curr->prev->next = curr->next;
+            curr->next->prev = curr->prev;
+
             strlist_node *to_delete = curr;
             curr = curr->next;
+
             free(to_delete->data);
             free(to_delete);
             removed_count++;
+        } else {
+            curr = curr->next;
         }
-        curr = curr->next;
-    }
+    } 
     return removed_count;
 }
 
 
-// cache it!
-char
+// TODO cache it!
+// TODO must be freed (not done yet)
+const char
 *strlist_repr(strlist *list, char sep) {
     size_t total_len = 0;
-    strlist_node *curr = list->head;
+    strlist_node *curr = list->next;
 
-    while (curr) {
+    while (curr != list) {
         total_len += curr->len + 1; // +1 for separator or null terminator
         curr = curr->next;
     }
@@ -114,9 +128,9 @@ char
         exit(EXIT_FAILURE);
     }
 
-    curr = list->head;
+    curr = list->next;
     char *ptr = result;
-    while (curr) {
+    while (curr != list) {
         memcpy(ptr, curr->data, curr->len);
         ptr += curr->len;
         if (curr->next) {
@@ -127,14 +141,14 @@ char
     }
     *ptr = '\0';
 
-    return result;
+    return (const char *) result;
 }
 
 
-char
+const char
 *strlist_find_any_in_buf(strlist *list, const void *buf, size_t buf_n) {
-    strlist_node *curr = list->head;
-    while (curr) {
+    strlist_node *curr = list->next;
+    while (curr != list) {
         if (memmem(buf, buf_n, curr->data, curr->len)) {
             return curr->data;
         }
