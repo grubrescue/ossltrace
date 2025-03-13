@@ -1,5 +1,8 @@
 #include "main.h"
 
+#include "../common/logger.h"
+#include "server.h"
+
 #include <argp.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -14,7 +17,6 @@
 typedef struct {
     enum { PRELOAD, AUDIT, CAPSTONE } mode;
     int  ignore_ca;
-    int  conf_server;
     char *output_file_path;
     char *denylist_file_path;
     char **child_argv;
@@ -55,7 +57,6 @@ main(int argc, char **argv) {
             { "denylist",   required_argument, NULL, 'd' },
             { "help",       no_argument,       NULL, 'h' },
             { "ignore-ca",  no_argument,       NULL, 'i' },
-            { "confserver", no_argument,       NULL, 's' },
             { NULL,         0,                 NULL,  0  }
         };
 
@@ -90,9 +91,6 @@ main(int argc, char **argv) {
             case 'i':
                 arguments.ignore_ca = 1;
                 break;
-            case 's':
-                arguments.conf_server = 1;
-                break;
             case '?':
                 print_usage(stderr, argv[0]);
                 exit(EXIT_FAILURE);
@@ -110,6 +108,8 @@ main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    // Arguments to transmit to child.
+
     if (arguments.output_file_path != NULL) {
         setenv(OSSLTRACE_LOG_OUTPUT_FILE_ENV_VAR, arguments.output_file_path, 1);
         free(arguments.output_file_path);
@@ -117,27 +117,10 @@ main(int argc, char **argv) {
         unsetenv(OSSLTRACE_LOG_OUTPUT_FILE_ENV_VAR);
     }
 
-    if (arguments.denylist_file_path != NULL) {
-        int err = setenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR, arguments.denylist_file_path, 1);
-        if (err) {
-            perror("setenv");
-            exit(EXIT_FAILURE);
-        }
-        free(arguments.denylist_file_path);
-    } else {
-        unsetenv(OSSLTRACE_DENYLIST_FILE_ENV_VAR);
-    }
-
     if (arguments.ignore_ca) {
         setenv(OSSLTRACE_IGNORE_CA_ENV_VAR, "1", 1);
     } else {
         unsetenv(OSSLTRACE_IGNORE_CA_ENV_VAR);
-    }
-
-    if (arguments.conf_server) {
-        setenv(OSSLTRACE_ENABLE_CONF_SERVER_ENV_VAR, "1", 1);
-    } else {
-        unsetenv(OSSLTRACE_ENABLE_CONF_SERVER_ENV_VAR);
     }
 
     switch(arguments.mode) {
@@ -174,7 +157,7 @@ main(int argc, char **argv) {
             if (capstone_lib_path == NULL) {
                 capstone_lib_path = OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH;
 
-#ifndef OSSLTRACE_USE_CAPSTONE
+#ifndef OSSLTRACE_CAPSTONE_AVAILABLE
                 fprintf(stderr, "WARNING: As there was no Capstone instance "
                                 "available during installation, you may have "
                                 "to specify the path to Capstone-based ossltrace library "
@@ -193,11 +176,34 @@ main(int argc, char **argv) {
             break;
             
         default:
+            assert(0);
     }
 
-    if (execvp(arguments.child_argv[0], arguments.child_argv) == -1) {
-        perror(arguments.child_argv[0]);
-        exit(EXIT_FAILURE);
+    char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX)+12); // should be enough
+    snprintf(socket_path, strlen(SOCKET_PATH_PREFIX)+12, "%s%d", SOCKET_PATH_PREFIX, getpid());
+    setenv(OSSLTRACE_SOCKET_PATH_ENV_VAR, socket_path, 1);
+
+    pid_t pid = fork();
+    if (pid == 0 /*child*/) {
+        if (execvp(arguments.child_argv[0], arguments.child_argv) == -1) {
+            perror(arguments.child_argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        assert(0 && "Unreachable");
+    } else if (pid > 0 /*parent*/) {
+        init_log(arguments.output_file_path);
+        OSSLTRACE_LOG("*** Started subprocess with pid=%d\n", pid);
+
+        init_firewall(arguments.denylist_file_path);
+
+        run_parasite_server(socket_path);
+
+        int status;
+        wait(&status);
+        printf("Return code: %d\n", WEXITSTATUS(status));
+
+        OSSLTRACE_LOG("*** Subprocess exited with return code %d\n", pid);
+        return status;
     }
 
     return EXIT_SUCCESS;

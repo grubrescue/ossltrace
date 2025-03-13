@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger.h"
+#include "../common/logger.h"
 #include "firewall.h"
 
 #include <stdio.h>
@@ -14,7 +14,6 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 
-#define SOCKET_PATH_PREFIX "/tmp/parasite.sock." // todo multiple
 #define MAX_EVENTS 8
 #define BUFFER_SIZE 1024
 
@@ -24,10 +23,16 @@ enum command {
     GET_STRINGS = 0x0002
 };
 
-static void handle_client(int client_fd);
-static void handle_command(int client_fd, unsigned short command, const char *data);
+static void 
+handle_client(int client_fd);
 
-static void *server_thread(void *) {
+static void 
+handle_command(int client_fd, unsigned short command, const char *data);
+
+static void 
+*server_thread(void *socket_path_arg) {
+    char *socket_path = (char *) socket_path_arg;
+
     int server_fd, client_fd, epoll_fd;
     struct sockaddr_un addr;
     struct epoll_event ev, events[MAX_EVENTS];
@@ -38,9 +43,6 @@ static void *server_thread(void *) {
         perror("socket");
         exit(EXIT_FAILURE);
     }
-    
-    char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX)+12); // should be enough
-    snprintf(socket_path, strlen(SOCKET_PATH_PREFIX)+12, "%s%d", SOCKET_PATH_PREFIX, getpid());
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
@@ -103,13 +105,17 @@ static void *server_thread(void *) {
         }
     }
 
+    //todo sigint handler??
     close(server_fd);
     close(epoll_fd);
     unlink(socket_path);
+    free(socket_path);
     return NULL;
 }
 
-static void handle_client(int client_fd) {
+
+static void 
+handle_client(int client_fd) {
     uint16_t command;
     char buffer[BUFFER_SIZE];
     ssize_t num_bytes;
@@ -129,8 +135,10 @@ static void handle_client(int client_fd) {
     handle_command(client_fd, command, buffer + 2);
 }
 
+
 // todo error checking
-static void handle_command(int client_fd, unsigned short command, const char *data) {
+static void 
+handle_command(int client_fd, unsigned short command, const char *data) {
     switch (command) {
         case ADD_STRING:
             firewall_add_str(data);
@@ -141,7 +149,7 @@ static void handle_command(int client_fd, unsigned short command, const char *da
         case GET_STRINGS:
             const char *strings = firewall_get_all_strings();
             if (strlen(strings) == 0) {
-                strings = "<empty>";
+                strings = "ossltrace:<empty>";
             }
             ssize_t bytes_written = write(client_fd, strings, strlen(strings));
             if (bytes_written < 1) {
@@ -153,9 +161,12 @@ static void handle_command(int client_fd, unsigned short command, const char *da
     }
 }
 
-void run_parasite_server() {
+
+void 
+run_parasite_server(char *socket_path) {
     pthread_t thread;
-    int status = pthread_create(&thread, NULL, server_thread, NULL);
+    int status = pthread_create(&thread, NULL, server_thread, socket_path);
+    OSSLTRACE_LOG("*** started server, socket at %s\n", socket_path);
     if (status != 0) {
         perror("pthread_create");
         exit(EXIT_FAILURE);

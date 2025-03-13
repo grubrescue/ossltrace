@@ -2,8 +2,8 @@
 
 #define _GNU_SOURCE
 
-#include "firewall.h"
-#include "logger.h"
+#include "firewall-client.h"
+#include "../common/logger.h"
 #include "util/templates/gen_payload.h"
 
 #include <openssl/ssl.h>
@@ -26,9 +26,9 @@ DEF_PAYLOAD(int, SSL_write, SSL *ssl, const void *buf, int num) {
     OSSLTRACE_LOG("\n")
 
     int retval;
-    const char *occurence = firewall_match_in_buf(buf, num);
-    if (occurence != NULL) {
-        OSSLTRACE_LOG("\n!!! FOUND %s, PACKET REFUSED !!!\n", occurence);
+    
+    int refused = firewall_match_in_buf(buf, num);
+    if (refused) {
         retval = -1;
     } else {
         retval = INVOKE_ORIGINAL(SSL_write, ssl, buf, num);
@@ -50,9 +50,8 @@ DEF_PAYLOAD(int, SSL_read, SSL *ssl, void *buf, int num) {
         OSSLTRACE_LOG_BUF(buf, retval)
         OSSLTRACE_LOG("\n")
 
-        const char *occurence = firewall_match_in_buf(buf, retval);
-        if (occurence != NULL) {
-            OSSLTRACE_LOG("!!! FOUND %s, PACKET REFUSED !!!\n", occurence)
+        int refused = firewall_match_in_buf(buf, retval);
+        if (refused) {
             retval = -1;
         }
     }
@@ -66,16 +65,11 @@ DEF_PAYLOAD(int, SSL_read, SSL *ssl, void *buf, int num) {
 static volatile int is_ca_ignored = -1;
 
 static void
-init_ca_ignore_mode() {
-    char *ca_env = getenv(OSSLTRACE_IGNORE_CA_ENV_VAR);
+init_ca_ignore_mode(char *ca_env) {
     is_ca_ignored = ca_env != NULL ? 1 : 0;
 }
 
 DEF_PAYLOAD(long, SSL_get_verify_result, const SSL *ssl) {
-    if (is_ca_ignored == -1) {
-        init_ca_ignore_mode();
-    }
-
     OSSLTRACE_LOG("\n*** SSL_get_verify_result intercepted\n")
 
     long res = INVOKE_ORIGINAL(SSL_get_verify_result, ssl);

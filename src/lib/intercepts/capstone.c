@@ -2,7 +2,7 @@
 
 #include "../payloads.h"
 #include "../initializer.h"
-#include "../logger.h"
+#include "../../common/logger.h"
 
 #include <stdio.h>
 #include <stdint.h>

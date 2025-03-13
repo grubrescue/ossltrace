@@ -18,3 +18,5 @@
 #ifndef OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH
     #error "OSSLTRACE_DEFAULT_CAPSTONE_LIB_PATH not defined"
 #endif
+
+#define SOCKET_PATH_PREFIX "/tmp/parasite.sock."

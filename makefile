@@ -24,7 +24,7 @@ capstone_found := $(shell pkg-config --exists capstone && echo yes || echo no)
 ifeq ($(capstone_found),yes)
     $(info Capstone ok; building with Capstone disassembly framework...)
     runner_cflags += \
-	-DOSSLTRACE_USE_CAPSTONE=1
+	-DOSSLTRACE_CAPSTONE_AVAILABLE=1
 else
     $(warning Capstone is not installed; corresponding functionality won't be available)
 endif

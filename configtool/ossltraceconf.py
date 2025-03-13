@@ -3,16 +3,14 @@
 import argparse
 import socket
 import struct
-# import time
+import os
+import re
 
-SOCKET_PATH = "/tmp/parasite.sock" # todo
-
-class EpollClient:
+class OssltraceClient:
     def __init__(self, socket_path):
         self.socket_path = socket_path
         self.client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.client_socket.connect(self.socket_path)
-        # self.client_socket.settimeout(200)
 
     def send_command(self, command, data=""):
         command = struct.pack('!H', command)  # Unsigned short in network byte order
@@ -21,15 +19,12 @@ class EpollClient:
 
     def add_string(self, string):
         self.send_command(0, string)
-        # time.sleep(0.3)
 
     def remove_string(self, string):
         self.send_command(1, string)
-        # time.sleep(0.3)
 
     def get_strings(self):
         self.send_command(2)
-        # time.sleep(0.3)
         response = self.client_socket.recv(4096).decode()
         return response
 
@@ -37,36 +32,56 @@ class EpollClient:
         self.client_socket.close()
 
 
+def list_pids():
+    pids = []
+    for filename in os.listdir('/tmp'):
+        match = re.match(r'parasite\.sock\.(\d+)', filename)
+        if match:
+            pids.append(int(match.group(1)))
+    return pids
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='EpollClient Command Line Interface')
-    parser.add_argument('socket_path', type=str, help='The path to the socket')
+    parser = argparse.ArgumentParser(description='ossltrace config CLI')
     subparsers = parser.add_subparsers(dest='command', help='Commands')
 
-    add_parser = subparsers.add_parser('add_string', help='Add a string to the list')
+    # list pids command
+    listpids_parser = subparsers.add_parser('listpids', help='List PIDs for socket files')
+
+    # serve pid-dependent args
+    client_parser = argparse.ArgumentParser(add_help=False)
+    client_parser.add_argument('pid', type=int, help='The PID suffix for the socket')
+
+    add_parser = subparsers.add_parser('addstring', parents=[client_parser], help='Add a string to the list')
     add_parser.add_argument('string', type=str, help='The string to add')
 
-    get_parser = subparsers.add_parser('get_strings', help='Get the list of strings')
+    get_parser = subparsers.add_parser('liststrings', parents=[client_parser], help='Get the list of strings')
 
-    remove_parser = subparsers.add_parser('remove_string', help='Remove a string from the list')
+    remove_parser = subparsers.add_parser('removestring', parents=[client_parser], help='Remove a string from the list')
     remove_parser.add_argument('string', type=str, help='The string to remove')
 
     args = parser.parse_args()
 
-    client = EpollClient(args.socket_path)
-    # client = EpollClient(SOCKET_PATH)
+    if args.command == 'listpids':
+        pids = list_pids()
+        print('List of PIDs:')
+        for pid in pids:
+            print(pid)
+    else:
+        socket_path = f'/tmp/parasite.sock.{args.pid}'
+        client = OssltraceClient(socket_path)
 
-    if args.command == 'add_string':
-        client.add_string(args.string)
-        print(f'Added string: {args.string}')
+        if args.command == 'addstring':
+            client.add_string(args.string)
+            print(f'Added string: {args.string}')
 
-    elif args.command == 'get_strings':
-        strings = client.get_strings()
-        print('Current list of strings:')
-        print(strings)
+        elif args.command == 'liststrings':
+            strings = client.get_strings()
+            print('Current list of strings:')
+            print(strings)
 
-    elif args.command == 'remove_string':
-        client.remove_string(args.string)
-        print(f'Removed string: {args.string}')
+        elif args.command == 'removestring':
+            client.remove_string(args.string)
+            print(f'Removed string: {args.string}')
 
-    client.close()
-
+        client.close()

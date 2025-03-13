@@ -145,14 +145,14 @@ const char
 }
 
 
-const char
-*strlist_find_any_in_buf(strlist *list, const void *buf, size_t buf_n) {
-    strlist_node *curr = list->next;
-    while (curr != list) {
-        if (memmem(buf, buf_n, curr->data, curr->len)) {
-            return curr->data;
-        }
-        curr = curr->next;
-    }
-    return NULL;
-}
+// const char
+// *strlist_find_any_in_buf(strlist *list, const void *buf, size_t buf_n) {
+//     strlist_node *curr = list->next;
+//     while (curr != list) {
+//         if (memmem(buf, buf_n, curr->data, curr->len)) {
+//             return curr->data;
+//         }
+//         curr = curr->next;
+//     }
+//     return NULL;
+// }
