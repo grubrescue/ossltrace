@@ -1,0 +1,24 @@
+name: Build with makefile
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install OpenSSL development headers 
+      run: sudo apt update && sudo apt install -y libssl-dev
+    
+    - name: make build must return 0
+      run: make build
+
+    - name: build artifacts exist
+      run: |
+        test -d build/ && \
+        test -f build/ossltrace && \
+        test -f build/lib/libossl_audit.so && \
+        test -f build/lib/libossl_preload.so
+
+    - name: launcher can print help
+      run: build/ossltrace -h
