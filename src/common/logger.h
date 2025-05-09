@@ -1,44 +1,15 @@
 #pragma once
 
 #include <assert.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#include "envvars.h"
+void
+init_log(char *output_file_path);
 
-static int log_fd = -1;
-static FILE *log_file = NULL;
-
-static void
-init_log(char *output_file_path) {
-  if (log_fd != -1) {
-    fprintf(stderr, "something strange: logger initialized twice\n");
-    return;
-  }
-
-  if (output_file_path == NULL) {
-    log_fd = 1;
-    log_file = stdout;
-  }
-
-  else {
-    log_fd = open(output_file_path, O_RDWR | O_CREAT, 00660);
-
-    if (log_fd != -1) {
-      log_file = fdopen(log_fd, "w+");
-    }
-
-    if (log_fd == -1 || log_file == NULL) {
-      perror(output_file_path);
-      fprintf(stderr, "!! log will be output to stdout\n\n");
-      fflush(stderr);
-
-      log_fd = 1;
-      log_file = stdout;
-    }
-  }
-}
+extern int log_fd;
+extern FILE *log_file;
 
 #define OSSLTRACE_LOG(...)        \
   assert(log_file != NULL);       \

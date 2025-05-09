@@ -1,8 +1,9 @@
-#pragma once
-
 #define _GNU_SOURCE
 
+#include "firewall_client.h"
+
 #include <arpa/inet.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +12,6 @@
 #include <unistd.h>
 
 #include "../common/logger.h"
-
-#define DENY_BUF_SIZE 4096  // todo rename
 
 static int sockfd = -1;
 
@@ -45,8 +44,9 @@ init_firewall_client(const char *socket_path) {
 
 int
 firewall_match_in_buf(const void *buf, int buf_len) {
-  OSSLTRACE_LOG("debug: goin' to server from pid=%d\n", getpid());
-  static char denylist_buf[DENY_BUF_SIZE];
+  assert(sockfd > 0 && "firewall client not initialized");
+
+  static char denylist_buf[FIREWALL_DENY_BUF_SIZE];
 
   unsigned short command = htons(2);
   if (send(sockfd, &command, sizeof(command), 0) == -1) {
@@ -55,7 +55,7 @@ firewall_match_in_buf(const void *buf, int buf_len) {
     exit(EXIT_FAILURE);
   }
 
-  ssize_t received = recv(sockfd, denylist_buf, DENY_BUF_SIZE, 0);
+  ssize_t received = recv(sockfd, denylist_buf, FIREWALL_DENY_BUF_SIZE, 0);
   if (received == -1) {
     perror("recv");
     close(sockfd);

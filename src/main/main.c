@@ -30,15 +30,13 @@ print_usage(FILE *where, const char *pathname) {
 void
 print_help(FILE *where, const char *pathname) {
   print_usage(where, pathname);
-  fprintf(stdout, 
-    "-m, --mode       Interception mode (preload|audit|patch)\n"
-    "-o, --output     Log destination (file/stderr/stdout)\n"
-    "-q, --quiet      Suppress logging\n"
-    "-d, --denylist   File containing filter patterns\n"
-    "-i, --ignore-ca  Disable certificate verification\n"
-    "-c, --control    Enable control socket\n"
-    "-h, --help       Display help\n"
-  );
+  fprintf(stdout,
+          "-m, --mode       interception mode (preload|audit|capstone)\n"
+          "-o, --output     log destination (filepath/stderr/stdout)\n"
+          "-q, --quiet      suppress logging\n"
+          "-d, --denylist   file containing filter patterns\n"
+          "-i, --ignore-ca  disable CA verification\n"
+          "-h, --help       display this\n");
 }
 
 int
@@ -54,7 +52,7 @@ main(int argc, char **argv) {
   while (!finished_parsing) {
     int option_index = 0;
 
-    static struct option long_options[] = {
+    struct option long_options[] = {
         {"mode", required_argument, NULL, 'm'},
         {"output", required_argument, NULL, 'o'},
         {"quiet", no_argument, NULL, 'q'},
@@ -182,9 +180,12 @@ main(int argc, char **argv) {
       assert(0);
   }
 
-  char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX) + 20);  // 20 must be enough for pid(int)
-  snprintf(socket_path, strlen(SOCKET_PATH_PREFIX) + 20, "%s%d", SOCKET_PATH_PREFIX, getpid());
+  char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX) + 32);  // 32 obviously enough for pid value (that is int)
+  snprintf(socket_path, strlen(SOCKET_PATH_PREFIX) + 32, "%s%d", SOCKET_PATH_PREFIX, getpid());
   setenv(OSSLTRACE_SOCKET_PATH_ENV_VAR, socket_path, 1);
+
+  init_log(arguments.output_file_path);
+  run_parasite_server(socket_path, arguments.denylist_file_path);
 
   pid_t pid = fork();
   if (pid == 0 /*child*/) {
@@ -194,19 +195,14 @@ main(int argc, char **argv) {
     }
     assert(0 && "Unreachable");
   } else if (pid > 0 /*parent*/) {
-    init_log(arguments.output_file_path);
     OSSLTRACE_LOG("*** Started subprocess with pid=%d\n", pid);
-
-    init_firewall(arguments.denylist_file_path);
-
-    run_parasite_server(socket_path);
-
     int status;
     wait(&status);
-    printf("Return code: %d\n", WEXITSTATUS(status));
-
-    OSSLTRACE_LOG("*** Subprocess exited with return code %d\n", pid);
+    OSSLTRACE_LOG("*** Subprocess exited with return code %d\n", WEXITSTATUS(status));
     return status;
+  } else {
+    perror("fork");
+    exit(EXIT_FAILURE);
   }
 
   return EXIT_SUCCESS;
