@@ -1,0 +1,4 @@
+BasedOnStyle: Google
+AllowAllParametersOfDeclarationOnNextLine: true
+AlwaysBreakAfterReturnType: All
+ColumnLimit: 0
