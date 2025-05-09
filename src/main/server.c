@@ -140,14 +140,18 @@ handle_command(int client_fd, unsigned short command, const char *data) {
       firewall_remove_str(data);
       break;
     case GET_STRINGS:
-      const char *strings = firewall_get_all_strings();
-      if (strlen(strings) == 0) {
-        strings = "\n";
+      char *firewall_strings = firewall_get_all_strings();
+      char *send_strings;
+      if (strlen(firewall_strings) == 0) {
+        send_strings = "\n";
+      } else {
+        send_strings = firewall_strings;
       }
-      ssize_t bytes_written = write(client_fd, strings, strlen(strings));
+      ssize_t bytes_written = write(client_fd, send_strings, strlen(send_strings));
       if (bytes_written == -1) {
         perror("write");
       }
+      free(firewall_strings);
       break;
     default:
       OSSLTRACE_LOG("parasite: unknown command: %hu\n", command);

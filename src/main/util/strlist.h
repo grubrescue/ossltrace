@@ -25,5 +25,5 @@ strlist_add(strlist *list, const char *str);
 int
 strlist_remove(strlist *list, const char *str);
 
-const char *
+char *
 strlist_repr(strlist *list, char sep);
