@@ -29,6 +29,18 @@ else
     $(warning Capstone is not installed; corresponding functionality won't be available)
 endif
 
+loader_srcfiles = \
+	src/common/logger.c \
+	src/main/util/strlist.c \
+	src/main/firewall.c \
+	src/main/server.c \
+	src/main/main.c
+
+lib_srcfiles = \
+	src/common/logger.c \
+	src/lib/firewall_client.c \
+	src/lib/initializer.c \
+	src/lib/payloads.c
 
 all: clean install
 
@@ -37,17 +49,17 @@ prepare:
 	mkdir -p ${build_dir}/lib
 
 loader: prepare
-	${cc} ${runner_cflags} -o ${build_dir}/${loader_name} src/main/main.c
+	${cc} ${runner_cflags} -o ${build_dir}/${loader_name} ${loader_srcfiles}
 
 libpreload.so: prepare
-	${cc} -shared -fPIC -o ${build_dir}/lib/${preload_lib_name} src/lib/intercepts/preload.c -lssl -lpthread
+	${cc} -shared -fPIC -o ${build_dir}/lib/${preload_lib_name} ${lib_srcfiles} src/lib/intercepts/preload.c -lssl -lpthread
 
 libaudit.so: prepare
-	${cc} -shared -fPIC -o ${build_dir}/lib/${audit_lib_name} src/lib/intercepts/audit.c -lssl -lpthread
+	${cc} -shared -fPIC -o ${build_dir}/lib/${audit_lib_name} ${lib_srcfiles} src/lib/intercepts/audit.c -lssl -lpthread
 
 libcapstone.so: prepare
 	[[ "${capstone_found}" == "yes" ]] && \
-	${cc} -shared -fPIC -o ${build_dir}/lib/${capstone_lib_name} src/lib/intercepts/capstone.c -lssl -lpthread -lcapstone \
+	${cc} -shared -fPIC -o ${build_dir}/lib/${capstone_lib_name} ${lib_srcfiles} src/lib/intercepts/capstone.c -lssl -lpthread -lcapstone \
 	|| true
 
 libs: libpreload.so libaudit.so libcapstone.so
