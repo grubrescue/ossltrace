@@ -71,9 +71,8 @@ strlist_remove(strlist *list, const char *str) {
   return removed_count;
 }
 
-// TODO cache it!
-// TODO must be freed (not done yet)
-const char *
+// Result must be freed (currently done in server.c).
+char *
 strlist_repr(strlist *list, char sep) {
   size_t total_len = 0;
   strlist_node *curr = list->next;
@@ -83,7 +82,7 @@ strlist_repr(strlist *list, char sep) {
     curr = curr->next;
   }
 
-  char *result = (char *)malloc(total_len + 1);  // +1 for null terminator
+  char *result = malloc(total_len + 1);  // +1 for null terminator
   if (!result) {
     perror("malloc");
     exit(EXIT_FAILURE);
@@ -102,5 +101,5 @@ strlist_repr(strlist *list, char sep) {
   }
   *ptr = '\0';
 
-  return (const char *)result;
+  return result;
 }

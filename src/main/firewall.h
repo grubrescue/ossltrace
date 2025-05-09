@@ -5,7 +5,7 @@
 void
 init_firewall(char *denylist_file_path);
 
-const char *
+char *
 firewall_get_all_strings();
 
 void

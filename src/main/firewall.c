@@ -68,10 +68,10 @@ init_firewall(char *denylist_file_path) {
   OSSLTRACE_LOG("\n~ firewall: forbidden strings list:\n%s\n", strlist_repr(deny_strs, '\n'));
 }
 
-const char *
+char *
 firewall_get_all_strings() {
   pthread_mutex_lock(&strlist_mutex);
-  const char *repr = strlist_repr(deny_strs, '\n');
+  char *repr = strlist_repr(deny_strs, '\n');
   OSSLTRACE_LOG("~ firewall: strings list request\n");
   pthread_mutex_unlock(&strlist_mutex);
   return repr;
