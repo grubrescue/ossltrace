@@ -12,8 +12,7 @@
   }                                                      \
   return INVOKE_PAYLOAD(ORIG_FUN, __VA_ARGS__);
 
-#define PRELOAD_CONSTRUCTOR(CONSTRUCTOR_FUNC, ...) \
-  __attribute__((constructor)) void                \
-  CAT2(CONSTRUCTOR_FUNC, constructor)() {          \
-    CONSTRUCTOR_FUNC(__VA_ARGS__);                 \
+#define PRELOAD_CONSTRUCTOR(CONSTRUCTOR_FUNC, ...)                          \
+  __attribute__((constructor)) void CAT2(CONSTRUCTOR_FUNC, constructor)() { \
+    CONSTRUCTOR_FUNC(__VA_ARGS__);                                          \
   }

@@ -7,7 +7,10 @@
 #include "util/templates/gen_payload.h"
 
 DEF_PAYLOAD(int, SSL_write, SSL *ssl, const void *buf, int num) {
-  OSSLTRACE_LOG("\n*** SSL_write intercepted\nintermediate buffer size is %d, contents: \n\n", num)
+  OSSLTRACE_LOG(
+      "\n*** SSL_write intercepted\nintermediate buffer size is %d, contents: "
+      "\n\n",
+      num)
   OSSLTRACE_LOG_BUF(buf, num)
   OSSLTRACE_LOG("\n")
 
@@ -31,7 +34,8 @@ DEF_PAYLOAD(int, SSL_read, SSL *ssl, void *buf, int num) {
   if (retval == -1) {
     OSSLTRACE_LOG("retval is -1, no buffer, sorry")
   } else {
-    OSSLTRACE_LOG("intermediate buffer size is %d (num was %d) contents: \n\n", retval, num)
+    OSSLTRACE_LOG("intermediate buffer size is %d (num was %d) contents: \n\n",
+                  retval, num)
     OSSLTRACE_LOG_BUF(buf, retval)
     OSSLTRACE_LOG("\n")
 
@@ -66,7 +70,8 @@ DEF_PAYLOAD(long, SSL_get_verify_result, const SSL *ssl) {
   }
 }
 
-DEF_PAYLOAD(void, SSL_CTX_set_verify, SSL_CTX *ctx, int mode, SSL_verify_cb verify) {
+DEF_PAYLOAD(void, SSL_CTX_set_verify, SSL_CTX *ctx, int mode,
+            SSL_verify_cb verify) {
   OSSLTRACE_LOG("\n*** SSL_CTX_set_verify intercepted\n")
   if (is_ca_ignored) {
     OSSLTRACE_LOG("setting SSL_VERIFY_NONE");

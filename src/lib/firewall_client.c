@@ -34,7 +34,8 @@ init_firewall_client(const char *socket_path) {
   addr.sun_family = AF_UNIX;
   strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 
-  if (connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1) {
+  if (connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) ==
+      -1) {
     perror("connect");
     close(sockfd);
     exit(EXIT_FAILURE);

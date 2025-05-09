@@ -68,7 +68,8 @@ disasm_get_patching_scope(void *fun, size_t req_patching_margin) {
 
   cs_free(insn, count);
 
-  return (struct patching_margins){.err = 0, .copy_start = copy_start, .copy_end = copy_end};
+  return (struct patching_margins){
+      .err = 0, .copy_start = copy_start, .copy_end = copy_end};
 }
 
 static void *
@@ -100,21 +101,26 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     exit(EXIT_FAILURE);
   }
 
-  struct patching_margins patch_info = disasm_get_patching_scope(orig_ptr, OSSLTRACE_LONGJMP_INSTR_SIZE);
+  struct patching_margins patch_info =
+      disasm_get_patching_scope(orig_ptr, OSSLTRACE_LONGJMP_INSTR_SIZE);
   if (patch_info.err) {
     OSSLTRACE_LOG("couldn't patch, sorry :(");
     exit(EXIT_FAILURE);
   }
 
   void *jmp_to_payload = OSSLTRACE_JMP_QWORD_PTR_RIP(payload_ptr);
-  void *jmp_to_original = OSSLTRACE_JMP_QWORD_PTR_RIP(((size_t)orig_ptr) + patch_info.copy_end);
+  void *jmp_to_original =
+      OSSLTRACE_JMP_QWORD_PTR_RIP(((size_t)orig_ptr) + patch_info.copy_end);
 
-  void *restored_orig_ptr = mmap(NULL, patch_info.copy_end + OSSLTRACE_LONGJMP_INSTR_SIZE,
-                                 PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  void *restored_orig_ptr =
+      mmap(NULL, patch_info.copy_end + OSSLTRACE_LONGJMP_INSTR_SIZE,
+           PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   memcpy(restored_orig_ptr, orig_ptr, patch_info.copy_end);
-  memcpy(restored_orig_ptr + patch_info.copy_end, jmp_to_original, OSSLTRACE_LONGJMP_INSTR_SIZE);
+  memcpy(restored_orig_ptr + patch_info.copy_end, jmp_to_original,
+         OSSLTRACE_LONGJMP_INSTR_SIZE);
 
-  memcpy(orig_ptr + patch_info.copy_start, jmp_to_payload, OSSLTRACE_LONGJMP_INSTR_SIZE);
+  memcpy(orig_ptr + patch_info.copy_start, jmp_to_payload,
+         OSSLTRACE_LONGJMP_INSTR_SIZE);
 
   err = mprotect(orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
   if (err) {
@@ -122,7 +128,8 @@ monkey_patch(void *orig_ptr, void *payload_ptr) {
     exit(EXIT_FAILURE);
   }
 
-  void *restored_orig_page = (void *)(((size_t)restored_orig_ptr) & ~(PAGE_SIZE - 1));
+  void *restored_orig_page =
+      (void *)(((size_t)restored_orig_ptr) & ~(PAGE_SIZE - 1));
   err = mprotect(restored_orig_page, PAGE_SIZE, PROT_READ | PROT_EXEC);
   if (err) {
     perror("mprotect");
@@ -161,7 +168,8 @@ SSL_write(SSL *ssl, const void *buf, int num) {
   if (SSL_write_sym == NULL) {
     SSL_write_sym = dlsym(RTLD_NEXT, "SSL_write");
     if (SSL_write_sym != NULL) {
-      SET_ORIGINAL(SSL_write, monkey_patch(SSL_write_sym, GET_PAYLOAD(SSL_write)));
+      SET_ORIGINAL(SSL_write,
+                   monkey_patch(SSL_write_sym, GET_PAYLOAD(SSL_write)));
     }
   }
 

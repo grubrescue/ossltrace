@@ -13,9 +13,7 @@
 #include "server.h"
 
 typedef struct {
-  enum { PRELOAD,
-         AUDIT,
-         CAPSTONE } mode;
+  enum { PRELOAD, AUDIT, CAPSTONE } mode;
   int ignore_ca;
   char *output_file_path;
   char *denylist_file_path;
@@ -52,14 +50,13 @@ main(int argc, char **argv) {
   while (!finished_parsing) {
     int option_index = 0;
 
-    struct option long_options[] = {
-        {"mode", required_argument, NULL, 'm'},
-        {"output", required_argument, NULL, 'o'},
-        {"quiet", no_argument, NULL, 'q'},
-        {"denylist", required_argument, NULL, 'd'},
-        {"help", no_argument, NULL, 'h'},
-        {"ignore-ca", no_argument, NULL, 'i'},
-        {NULL, 0, NULL, 0}};
+    struct option long_options[] = {{"mode", required_argument, NULL, 'm'},
+                                    {"output", required_argument, NULL, 'o'},
+                                    {"quiet", no_argument, NULL, 'q'},
+                                    {"denylist", required_argument, NULL, 'd'},
+                                    {"help", no_argument, NULL, 'h'},
+                                    {"ignore-ca", no_argument, NULL, 'i'},
+                                    {NULL, 0, NULL, 0}};
 
     int c = getopt_long(argc, argv, "+m:o:qd:hi", long_options, &option_index);
 
@@ -163,8 +160,8 @@ main(int argc, char **argv) {
                 "WARNING: As there was no Capstone instance "
                 "available during installation, you may have "
                 "to specify the path to Capstone-based ossltrace library "
-                "explicitly.\nIf error occurs, try setting the " OSSLTRACE_CAPSTONE_ENV_VAR
-                " environment variable. ");
+                "explicitly.\nIf error occurs, try setting "
+                "the " OSSLTRACE_CAPSTONE_ENV_VAR " environment variable. ");
 #endif
       }
 
@@ -180,8 +177,11 @@ main(int argc, char **argv) {
       assert(0);
   }
 
-  char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX) + 32);  // 32 obviously enough for pid value (that is int)
-  snprintf(socket_path, strlen(SOCKET_PATH_PREFIX) + 32, "%s%d", SOCKET_PATH_PREFIX, getpid());
+  char *socket_path =
+      malloc(strlen(SOCKET_PATH_PREFIX) +
+             32);  // 32 obviously enough for pid value (that is int)
+  snprintf(socket_path, strlen(SOCKET_PATH_PREFIX) + 32, "%s%d",
+           SOCKET_PATH_PREFIX, getpid());
   setenv(OSSLTRACE_SOCKET_PATH_ENV_VAR, socket_path, 1);
 
   init_log(arguments.output_file_path);
@@ -198,7 +198,8 @@ main(int argc, char **argv) {
     OSSLTRACE_LOG("*** Started subprocess with pid=%d\n", pid);
     int status;
     wait(&status);
-    OSSLTRACE_LOG("*** Subprocess exited with return code %d\n", WEXITSTATUS(status));
+    OSSLTRACE_LOG("*** Subprocess exited with return code %d\n",
+                  WEXITSTATUS(status));
     return WEXITSTATUS(status);
   } else {
     perror("fork");
