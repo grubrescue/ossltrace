@@ -25,13 +25,20 @@ typedef struct {
 void
 print_usage(FILE *where, const char *pathname) {
   fprintf(where, "usage: %s [options] command [command args]\n", pathname);
-  fprintf(where, "see list of options by typing %s -h/--help\n", pathname);
 }
 
 void
 print_help(FILE *where, const char *pathname) {
   print_usage(where, pathname);
-  fprintf(stdout, "no help yet, sorry!\n\n");
+  fprintf(stdout, 
+    "-m, --mode       Interception mode (preload|audit|patch)\n"
+    "-o, --output     Log destination (file/stderr/stdout)\n"
+    "-q, --quiet      Suppress logging\n"
+    "-d, --denylist   File containing filter patterns\n"
+    "-i, --ignore-ca  Disable certificate verification\n"
+    "-c, --control    Enable control socket\n"
+    "-h, --help       Display help\n"
+  );
 }
 
 int
@@ -175,8 +182,8 @@ main(int argc, char **argv) {
       assert(0);
   }
 
-  char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX) + 12);  // should be enough
-  snprintf(socket_path, strlen(SOCKET_PATH_PREFIX) + 12, "%s%d", SOCKET_PATH_PREFIX, getpid());
+  char *socket_path = malloc(strlen(SOCKET_PATH_PREFIX) + 20);  // 20 must be enough for pid(int)
+  snprintf(socket_path, strlen(SOCKET_PATH_PREFIX) + 20, "%s%d", SOCKET_PATH_PREFIX, getpid());
   setenv(OSSLTRACE_SOCKET_PATH_ENV_VAR, socket_path, 1);
 
   pid_t pid = fork();
