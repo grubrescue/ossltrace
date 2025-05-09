@@ -7,8 +7,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: install OpenSSL development headers 
-      run: sudo apt update && sudo apt install -y libssl-dev
+    - name: install OpenSSL development headers and curl
+      run: sudo apt update && sudo apt install -y libssl-dev curl
     
     - name: make build must return 0
       run: make build
@@ -22,3 +22,14 @@ jobs:
 
     - name: launcher can print help
       run: build/ossltrace -h
+
+    - name: sudo make provides full installation
+      run: sudo make
+
+    - name: libs located at /usr/lib
+      run: |
+        test -f /usr/lib/libossl_audit.so && \
+        test -f /usr/lib/libossl_preload.so
+
+    - name: basic curl test with default preload mode 
+      run: build/ossltrace -- curl -L --http1.1 -o/dev/null https://example.com
