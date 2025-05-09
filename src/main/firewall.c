@@ -44,7 +44,8 @@ init_firewall(char *denylist_file_path) {
 
   char buf[OSSLTRACE_MAX_DENYLIST_WORD_LEN];
   char *line;
-  while ((line = fgets(buf, OSSLTRACE_MAX_DENYLIST_WORD_LEN, denylist_file)) != NULL) {
+  while ((line = fgets(buf, OSSLTRACE_MAX_DENYLIST_WORD_LEN, denylist_file)) !=
+         NULL) {
     line = strdup(line);
     if (line != NULL) {
       int last_idx = strlen(line) - 1;
@@ -65,7 +66,8 @@ init_firewall(char *denylist_file_path) {
     exit(EXIT_FAILURE);
   }
 
-  OSSLTRACE_LOG("\n~ firewall: forbidden strings list:\n%s\n", strlist_repr(deny_strs, '\n'));
+  OSSLTRACE_LOG("\n~ firewall: forbidden strings list:\n%s\n",
+                strlist_repr(deny_strs, '\n'));
 }
 
 char *

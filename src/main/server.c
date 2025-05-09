@@ -46,7 +46,8 @@ server_thread(void *socket_path_arg) {
   strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 
   unlink(socket_path);
-  if (bind(server_fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1) {
+  if (bind(server_fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) ==
+      -1) {
     perror("bind");
     close(server_fd);
     exit(EXIT_FAILURE);
@@ -147,7 +148,8 @@ handle_command(int client_fd, unsigned short command, const char *data) {
       } else {
         send_strings = firewall_strings;
       }
-      ssize_t bytes_written = write(client_fd, send_strings, strlen(send_strings));
+      ssize_t bytes_written =
+          write(client_fd, send_strings, strlen(send_strings));
       if (bytes_written == -1) {
         perror("write");
       }
