@@ -22,7 +22,7 @@ jobs:
 
     - name: launcher can print help
       run: build/ossltrace -h
-
+    
     - name: sudo make provides full installation
       run: sudo make
 
@@ -33,3 +33,9 @@ jobs:
 
     - name: basic curl test with default preload mode 
       run: build/ossltrace -- curl -L --http1.1 -o/dev/null https://example.com
+
+    - name: create denylist
+      run: echo "GET" > build/denylist.txt
+
+    - name: filter out "GET"
+      run: build/ossltrace -d build/denylist.txt -- curl -L --http1.1 -o/dev/null  https://example.com || true
