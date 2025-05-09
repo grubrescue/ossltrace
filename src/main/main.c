@@ -199,7 +199,7 @@ main(int argc, char **argv) {
     int status;
     wait(&status);
     OSSLTRACE_LOG("*** Subprocess exited with return code %d\n", WEXITSTATUS(status));
-    return status;
+    return WEXITSTATUS(status);
   } else {
     perror("fork");
     exit(EXIT_FAILURE);
