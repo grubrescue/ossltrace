@@ -56,12 +56,11 @@ ossltrace [options] -- <command>
 
 ### Options
 ```
-  -m, --mode       Interception mode (preload|audit|patch)
+  -m, --mode       Interception mode (preload|audit|capstone)
   -o, --output     Log destination (file/stderr/stdout)
   -q, --quiet      Suppress logging
   -d, --denylist   File containing filter patterns
   -i, --ignore-ca  Disable certificate verification
-  -c, --control    Enable control socket
   -h, --help       Display help
 ```
 
